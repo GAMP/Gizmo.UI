@@ -1,0 +1,56 @@
+﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Routing;
+
+namespace Gizmo.UI.Services
+{
+    /// <summary>
+    /// Navigation service.
+    /// </summary>
+    public class NavigationService
+    {
+        #region FIELDS
+        
+        private NavigationManager? _navigationManager; 
+
+        #endregion
+
+        #region EVENTS
+
+        /// <summary>
+        /// An event that fires when the navigation location has changed.
+        /// </summary>
+        public event EventHandler<LocationChangedEventArgs>? LocationChanged;
+
+        #endregion
+
+        #region FUNCTIONS
+        
+        public void AssociateNavigtionManager(NavigationManager navigationManager)
+        {
+            if (navigationManager == null)
+                throw new ArgumentNullException(nameof(navigationManager));
+
+            if (_navigationManager == null)
+            {
+                _navigationManager = navigationManager;
+                _navigationManager.LocationChanged += OnNavigationManagerLocationChanged;
+            }
+        }
+
+        public void NavigateTo(string uri, NavigationOptions options = default)
+        {
+            _navigationManager?.NavigateTo(uri, options);
+        }
+
+        #endregion
+
+        #region EVENT HANDLERS
+        
+        private void OnNavigationManagerLocationChanged(object? sender, LocationChangedEventArgs e)
+        {
+            LocationChanged?.Invoke(this, e);
+        }       
+
+        #endregion
+    }
+}
