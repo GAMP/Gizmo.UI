@@ -216,6 +216,33 @@ namespace Gizmo.UI.View.Services
             notifyPropertyChanged.PropertyChanged -= OnViewStatePropertyChangedInternal;
         }
 
+        /// <summary>
+        /// Gets view state.
+        /// </summary>
+        /// <typeparam name="T">View state type.</typeparam>
+        /// <param name="init">Initialization function.</param>
+        /// <returns></returns>
+        protected T GetViewState<T>(Action<T>? init = default) where T : IViewState
+        {
+            //get required view state
+            var state = ServiceProvider.GetRequiredService<T>();
+
+            //if initalization function set invokeit
+            if (init != null)
+            {
+                //always lock property changes during in code modification of properties
+                using (state.PropertyChangedLock())
+                {
+                    init(state);
+                }
+            }
+
+            //attach property changes
+            Attach(state);
+
+            return state;
+        }
+
         #endregion
 
         #region PRIVATE EVENT HANDLERS
