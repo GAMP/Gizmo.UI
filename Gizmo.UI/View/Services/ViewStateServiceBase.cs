@@ -205,12 +205,20 @@ namespace Gizmo.UI.View.Services
             ViewState.RaiseChanged();
         }
 
+        /// <summary>
+        /// Attaches property changed event.
+        /// </summary>
+        /// <param name="notifyPropertyChanged">Instance.</param>
         protected void Attach(INotifyPropertyChanged notifyPropertyChanged)
         {
             notifyPropertyChanged.PropertyChanged -= OnViewStatePropertyChangedInternal;
             notifyPropertyChanged.PropertyChanged += OnViewStatePropertyChangedInternal;
         }
 
+        /// <summary>
+        /// Dettaches property changed event.
+        /// </summary>
+        /// <param name="notifyPropertyChanged">Instance.</param>
         protected void Detach(INotifyPropertyChanged notifyPropertyChanged)
         {
             notifyPropertyChanged.PropertyChanged -= OnViewStatePropertyChangedInternal;
@@ -221,7 +229,13 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         /// <typeparam name="T">View state type.</typeparam>
         /// <param name="init">Initialization function.</param>
-        /// <returns></returns>
+        /// <returns>
+        /// View state instance of <typeparamref name="T"/> type.
+        /// </returns>
+        /// <remarks>
+        /// The new instance <see cref="INotifyPropertyChanged"/> event will also be attached autmatically.<br/>
+        /// Property changed notifications will also be locked as long as the <paramref name="init"/> routine runs.
+        /// </remarks>
         protected T GetViewState<T>(Action<T>? init = default) where T : IViewState
         {
             //get required view state

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using Gizmo.Shared.UI.Services;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Reflection;
