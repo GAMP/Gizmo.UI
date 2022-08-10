@@ -8,7 +8,7 @@ namespace Gizmo.UI.View.States
     public abstract class ViewStateBase : PropertyChangedBase, IViewState
     {
         #region EVENTS
-        public event EventHandler OnChange;
+        public event EventHandler? OnChange;
         #endregion
 
         #region FIELDS
