@@ -87,7 +87,13 @@ namespace Gizmo.UI
             });
         }
 
-        private static void Get(object? instance, Type type, IList<InstanceValidationInfo> validationObjects)
+        /// <summary>
+        /// Recursevly gets validation info on specified object.
+        /// </summary>
+        /// <param name="instance">Object instance.</param>
+        /// <param name="type">Object type.</param>
+        /// <param name="validationInfos">Validation info collection.</param>
+        private static void Get(object? instance, Type type, IList<InstanceValidationInfo> validationInfos)
         {
             //get all validating properties for the type specified
             var properties = GetProperties(type);
@@ -96,7 +102,7 @@ namespace Gizmo.UI
             var nonClassProperties = properties.Where(p => _nonClassPropertiesPredictate(p));
 
             //create new info
-            validationObjects.Add(new InstanceValidationInfo(instance, type, nonClassProperties));
+            validationInfos.Add(new InstanceValidationInfo(instance, type, nonClassProperties));
 
             //get all properties that represent a class
             var classProperties = properties.Where(p => _classPropertiesPredictate(p));
@@ -109,7 +115,7 @@ namespace Gizmo.UI
                 var obj = property.GetValue(instance);
 
                 //recurse and get properties that should be validated
-                Get(obj, property.PropertyType, validationObjects);
+                Get(obj, property.PropertyType, validationInfos);
             }
         }
 
