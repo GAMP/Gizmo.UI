@@ -19,16 +19,12 @@ namespace Gizmo.UI.View.Services
         {
             _editContext = new EditContext(viewState);
             _validationMessageStore = new ValidationMessageStore(_editContext);
-            _fieldChangedObservable = Observable.FromEventPattern<FieldChangedEventArgs>(e => _editContext.OnFieldChanged += e,
-                e => _editContext.OnFieldChanged -= e)
-                .Throttle(TimeSpan.FromMilliseconds(1000));
         }
         #endregion
 
         #region READ ONLY FIELDS
         private readonly EditContext _editContext;
         private readonly ValidationMessageStore _validationMessageStore;
-        private readonly IObservable<System.Reactive.EventPattern<FieldChangedEventArgs>> _fieldChangedObservable;
         #endregion
 
         #region PROPERTIES
@@ -157,11 +153,6 @@ namespace Gizmo.UI.View.Services
             ViewStateChanged();
         }
 
-        private void OnEditContextFieldChangeDebounced(FieldChangedEventArgs args)
-        {
-            //technically we are not relying on this event and its currently only prsent for experimentation
-        }
-
         #endregion
 
         #region OVERRIDES
@@ -189,8 +180,6 @@ namespace Gizmo.UI.View.Services
 
         protected override Task OnInitializing(CancellationToken ct)
         {
-            _fieldChangedObservable.Subscribe(e => OnEditContextFieldChangeDebounced(e.EventArgs));
-
             _editContext.OnValidationStateChanged += OnEditContextValidationStateChanged;
             _editContext.OnValidationRequested += OnEditContextValidationRequested;
 
