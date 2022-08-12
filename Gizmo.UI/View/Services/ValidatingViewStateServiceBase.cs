@@ -91,6 +91,7 @@ namespace Gizmo.UI.View.Services
             DataAnnotationsValidator.Validate(fieldIdentifier, _validationMessageStore);
 
             //custom validation
+            OnCustomValidation(fieldIdentifier, _validationMessageStore);
         }
 
         /// <summary>
@@ -114,7 +115,16 @@ namespace Gizmo.UI.View.Services
             }
 
             return fieldIdentifier;
-        } 
+        }
+
+        #endregion
+
+        #region PROTECTED VIRTUAL
+
+        protected virtual void OnCustomValidation(FieldIdentifier fieldIdentifier, ValidationMessageStore validationMessageStore)
+        {
+
+        }
 
         #endregion
 
