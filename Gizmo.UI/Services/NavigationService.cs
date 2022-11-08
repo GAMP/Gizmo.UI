@@ -6,7 +6,7 @@ namespace Gizmo.UI.Services
     /// <summary>
     /// Navigation service.
     /// </summary>
-    public class NavigationService
+    public sealed class NavigationService
     {
         #region FIELDS
         
