@@ -5,7 +5,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Gizmo.UI.Services
 {
-    public abstract class DialogService : IDialogService
+    /// <summary>
+    /// Dialog service base implementation.
+    /// </summary>
+    public abstract class DialogServiceBase : IDialogService
     {
         #region CONSTRCUTOR
         /// <summary>
@@ -13,7 +16,7 @@ namespace Gizmo.UI.Services
         /// </summary>
         /// <param name="serviceProvider">Service provider.</param>
         /// <param name="logger">Logger.</param>
-        public DialogService(IServiceProvider serviceProvider, ILogger<DialogService> logger)
+        public DialogServiceBase(IServiceProvider serviceProvider, ILogger<DialogServiceBase> logger)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
