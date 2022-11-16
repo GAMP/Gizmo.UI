@@ -8,7 +8,7 @@ namespace Gizmo.UI.View.Services
     [Register()]
     public sealed class DialogHostViewStateService : ViewStateServiceBase<DialogHostViewState>
     {
-        public DialogHostViewStateService(DialogService dialogService,
+        public DialogHostViewStateService(IDialogService dialogService,
             DialogHostViewState viewState, 
             ILogger<DialogHostViewStateService> logger,
             IServiceProvider serviceProvider)
@@ -19,7 +19,7 @@ namespace Gizmo.UI.View.Services
         }
 
         #region FIELDS
-        readonly DialogService _dialogService;
+        readonly IDialogService _dialogService;
         #endregion
 
         protected override Task OnInitializing(CancellationToken ct)

@@ -1,13 +1,11 @@
 ﻿using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Gizmo.UI.Services
 {
-    [Register()]
-    public sealed class DialogService
+    public abstract class DialogService : IDialogService
     {
         #region CONSTRCUTOR
         /// <summary>
@@ -45,7 +43,7 @@ namespace Gizmo.UI.Services
 
         #region FUNCTIONS
 
-        public Task<ShowDialogResult<TResult>> ShowDialogAsync<TComponent, TResult>(IDictionary<string, object> parameters,
+        public virtual Task<ShowDialogResult<TResult>> ShowDialogAsync<TComponent, TResult>(IDictionary<string, object> parameters,
             DialogDisplayOptions? displayOptions = null,
             DialogAddOptions? addOptions = null,
             CancellationToken cancellationToken = default) where TComponent : ComponentBase where TResult : class
@@ -130,7 +128,7 @@ namespace Gizmo.UI.Services
             return Task.FromResult(result);
         }
 
-        public Task<ShowDialogResult<EmptyDialogResult>> ShowDialogAsync<TComponent>(IDictionary<string, object> parameters,
+        public virtual Task<ShowDialogResult<EmptyDialogResult>> ShowDialogAsync<TComponent>(IDictionary<string, object> parameters,
             DialogDisplayOptions? displayOptions = null,
             DialogAddOptions? addOptions = null,
             CancellationToken cancellationToken = default) where TComponent : ComponentBase
