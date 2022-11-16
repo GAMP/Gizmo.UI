@@ -9,7 +9,7 @@ namespace Gizmo.UI.Services
     /// <remarks>
     /// This dialog is used to provide the ability to show dialogs with any Razor component as content.
     /// </remarks>
-    public sealed class DynamicComponentDialog<TComponentType,TResult> : IDynamicComponentDialog where TComponentType : ComponentBase
+    public sealed class DynamicComponentDialog<TComponentType,TResult> : IDynamicComponentDialog where TComponentType : ComponentBase where TResult :class
     {
         #region CONSTRUCTOR
         /// <summary>

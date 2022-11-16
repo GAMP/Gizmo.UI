@@ -19,8 +19,13 @@ namespace Gizmo.UI.View.Services
         }
 
         #region FIELDS
-        readonly DialogService _dialogService; 
+        readonly DialogService _dialogService;
         #endregion
+
+        protected override Task OnInitializing(CancellationToken ct)
+        {
+            return base.OnInitializing(ct);
+        }
 
         protected override void OnDisposing(bool isDisposing)
         {

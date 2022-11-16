@@ -27,7 +27,7 @@ namespace Gizmo.UI.Services
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger _logger;
         private readonly ConcurrentQueue<IDynamicComponentDialog> _dialogQueue = new();
-        private readonly ConcurrentDictionary<int, IDynamicComponentDialog> _dialogLookup = new ConcurrentDictionary<int, IDynamicComponentDialog>();
+        private readonly ConcurrentDictionary<int, IDynamicComponentDialog> _dialogLookup = new();
         private int _dialogIdentifierCounter = 0;
         #endregion
 
