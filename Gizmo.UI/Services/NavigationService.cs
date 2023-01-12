@@ -42,10 +42,15 @@ namespace Gizmo.UI.Services
             _navigationManager?.NavigateTo(uri, options);
         }
 
+        public string GetUri()
+        {
+            return _navigationManager?.Uri ?? string.Empty;
+        }
+
         #endregion
 
         #region EVENT HANDLERS
-        
+
         private void OnNavigationManagerLocationChanged(object? sender, LocationChangedEventArgs e)
         {
             LocationChanged?.Invoke(this, e);
