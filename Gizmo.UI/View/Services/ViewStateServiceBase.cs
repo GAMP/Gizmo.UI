@@ -5,6 +5,8 @@ using System.ComponentModel;
 using Gizmo.UI.View.States;
 using Gizmo.UI.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Components;
+using System.Reflection;
 
 namespace Gizmo.UI.View.Services
 {
@@ -19,6 +21,7 @@ namespace Gizmo.UI.View.Services
         {
             _viewState = viewState;
             _navigationService = serviceProvider.GetRequiredService<NavigationService>();
+            _associatedRoutes = GetType().GetCustomAttributes<RouteAttribute>() ?? Enumerable.Empty<RouteAttribute>();
         }
         #endregion
 
@@ -31,9 +34,15 @@ namespace Gizmo.UI.View.Services
         private int _stateChangedDebounceBufferTime = 1000;  //buffer state changes for 1 second by default
         private int _propertyChangedBufferTime = 1000; //buffer state changes for 1 second by default
         private readonly NavigationService _navigationService;
+        private readonly IEnumerable<RouteAttribute> _associatedRoutes; //set of associated routes
         #endregion
 
         #region PROPERTIES
+
+        /// <summary>
+        /// Gets if current application route matches current view state service. 
+        /// </summary>
+        protected bool IsNavigatedTo { get; private set; }
 
         /// <summary>
         /// Gets view state.
@@ -134,10 +143,10 @@ namespace Gizmo.UI.View.Services
              //group changes by their source
              .Select(e => e.GroupBy(p => p.Item1))
              //select changes grupped by sender (view state)
-             .Select(e => e.Select(p=> new
+             .Select(e => e.Select(p => new
              {
                  //sender will be the groupping key
-                 Sender=p.Key,
+                 Sender = p.Key,
                  //group property changes by property name and only select last from each
                  Args = p.Select(pc => pc.Item2)
                  .GroupBy(pr => pr.PropertyName)
@@ -151,12 +160,12 @@ namespace Gizmo.UI.View.Services
                      {
                          OnViewStatePropertyChangedDebounced(changedState.Sender, changedState.Args.ToList());
                      }
-                     catch(Exception ex)
+                     catch (Exception ex)
                      {
                          Logger.LogError(ex, "Error in property changed debounce handler (multiple properties).");
                      }
 
-                     foreach(var change in changedState.Args)
+                     foreach (var change in changedState.Args)
                      {
                          try
                          {
@@ -166,7 +175,7 @@ namespace Gizmo.UI.View.Services
                          {
                              Logger.LogError(ex, "Error in property changed debounce handler (single property).");
                          }
-                     }                   
+                     }
                  }
              });
         }
@@ -299,7 +308,7 @@ namespace Gizmo.UI.View.Services
         /// <param name="sender">Source view state object.</param>
         /// <param name="e">Property changed arguments.</param>
         protected virtual void OnViewStatePropertyChangedDebounced(object sender, PropertyChangedEventArgs e)
-        {           
+        {
         }
 
         /// <summary>
@@ -314,8 +323,53 @@ namespace Gizmo.UI.View.Services
         {
         }
 
+        
+        private async void OnLocationChangedInternal(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+        {
+            if (IsAssociatedRoute(e.Location))
+            {
+                if (!IsNavigatedTo)
+                {
+                    IsNavigatedTo = true;
+                    await OnNavigatedIn();
+                }
+            }
+            else
+            {
+                if (IsNavigatedTo)
+                {
+                    IsNavigatedTo = false;
+                    await OnNavigatedOut();               
+                }
+            }
+
+            OnLocationChanged(sender, e);
+        }
+
+        /// <summary>
+        /// Called after current application location changed.
+        /// </summary>
+        /// <param name="sender">Sender.</param>
+        /// <param name="e">Location change parameters.</param>
         protected virtual void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
         {
+
+        }
+
+        /// <summary>
+        /// Called once application navigates into one of view service associated routes.
+        /// </summary>
+        protected virtual Task OnNavigatedIn()
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Called once application navigates to route that does not match any view service associated routes.
+        /// </summary>
+        protected virtual Task OnNavigatedOut()
+        {
+            return Task.CompletedTask;
         }
 
         #endregion
@@ -329,7 +383,7 @@ namespace Gizmo.UI.View.Services
 
             Attach(ViewState);
 
-            NavigationService.LocationChanged += OnLocationChanged;
+            NavigationService.LocationChanged += OnLocationChangedInternal;
 
             return base.OnInitializing(ct);
         }
@@ -344,11 +398,24 @@ namespace Gizmo.UI.View.Services
 
             Detach(ViewState);
 
-            NavigationService.LocationChanged -= OnLocationChanged;
+            NavigationService.LocationChanged -= OnLocationChangedInternal;
 
             base.OnDisposing(isDisposing);
         }
 
         #endregion
+
+        /// <summary>
+        /// Checks if current application url matches one of view service associated routes.
+        /// </summary>
+        /// <param name="fullUrl">Current application location url.</param>
+        private bool IsAssociatedRoute(string fullUrl)
+        {
+            if (!Uri.TryCreate(fullUrl, UriKind.Absolute, out var uri))
+                return false;
+
+            //TODO : Need to have correct matching of template (regx?)
+            return _associatedRoutes.Any(route => route.Template == uri.PathAndQuery);
+        }
     }
 }
