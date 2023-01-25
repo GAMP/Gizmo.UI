@@ -158,7 +158,7 @@ namespace Gizmo.UI.View.Services
                  {
                      try
                      {
-                         OnViewStatePropertyChangedDebounced(changedState.Sender, changedState.Args.ToList());
+                         OnViewStatePropertyChangedDebouncedAsync(changedState.Sender, changedState.Args.ToList());
                      }
                      catch (Exception ex)
                      {
@@ -298,8 +298,9 @@ namespace Gizmo.UI.View.Services
         /// <remarks>
         /// The arguments will contain a list of unique property change arguments.
         /// </remarks>
-        protected virtual void OnViewStatePropertyChangedDebounced(object sender, IEnumerable<PropertyChangedEventArgs> propertyChangedArgs)
+        protected virtual Task OnViewStatePropertyChangedDebouncedAsync(object sender, IEnumerable<PropertyChangedEventArgs> propertyChangedArgs)
         {
+            return Task.CompletedTask;
         }
 
         /// <summary>

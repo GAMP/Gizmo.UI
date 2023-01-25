@@ -58,7 +58,7 @@ namespace Gizmo.UI.View.Services
         /// <summary>
         /// Validates all validation participating properties on current <see cref="ViewStateServiceBase.ViewState"/>.
         /// </summary>
-        protected void ValidateProperties()
+        protected async Task ValidatePropertiesAsync()
         {
             //get validation information from the view state
             var validationObjects = ValidationInfo.Get(ViewState);
@@ -72,7 +72,7 @@ namespace Gizmo.UI.View.Services
                         continue;
 
                     //validate each individual property on the object instance
-                    ValidateProperty(new FieldIdentifier(validationObject.Instance, property.Name));
+                    await ValidatePropertyAsync(new FieldIdentifier(validationObject.Instance, property.Name));
                 }
             }
 
@@ -80,7 +80,7 @@ namespace Gizmo.UI.View.Services
             _editContext.NotifyValidationStateChanged();
         }
 
-        protected void ValidateProperty(in FieldIdentifier fieldIdentifier)
+        protected async Task ValidatePropertyAsync(FieldIdentifier fieldIdentifier)
         {
             //the field identifier will have the property name and obect
 
@@ -92,6 +92,7 @@ namespace Gizmo.UI.View.Services
 
             //custom validation
             OnCustomValidation(fieldIdentifier, _validationMessageStore);
+            await OnCustomValidationAsync(fieldIdentifier, _validationMessageStore);
         }
 
         /// <summary>
@@ -126,6 +127,11 @@ namespace Gizmo.UI.View.Services
 
         }
 
+        protected virtual Task OnCustomValidationAsync(FieldIdentifier fieldIdentifier, ValidationMessageStore validationMessageStore)
+        {
+            return Task.CompletedTask;
+        }
+
         #endregion
 
         #region EVENT HANDLERS
@@ -138,14 +144,14 @@ namespace Gizmo.UI.View.Services
         /// <remarks>
         /// This method will only be invoked after <see cref="EditContext.Validate"/> is called.
         /// </remarks>
-        private void OnEditContextValidationRequested(object? sender, ValidationRequestedEventArgs e)
+        private async void OnEditContextValidationRequested(object? sender, ValidationRequestedEventArgs e)
         {
             //when validation is requested on the context all view state properties that participate in validation should be revalidated
 
             //it should not be required to call ResetValidationErrors() since each individual property will be re-validated
 
             //revalidate all properties
-            ValidateProperties();
+            await ValidatePropertiesAsync();
         }
 
         private void OnEditContextValidationStateChanged(object? sender, ValidationStateChangedEventArgs e)
@@ -167,9 +173,9 @@ namespace Gizmo.UI.View.Services
 
         #region OVERRIDES
 
-        protected override void OnViewStatePropertyChangedDebounced(object sender, IEnumerable<PropertyChangedEventArgs> propertyChangedArgs)
+        protected override async Task OnViewStatePropertyChangedDebouncedAsync(object sender, IEnumerable<PropertyChangedEventArgs> propertyChangedArgs)
         {
-            base.OnViewStatePropertyChangedDebounced(sender, propertyChangedArgs);
+            await base.OnViewStatePropertyChangedDebouncedAsync(sender, propertyChangedArgs);
 
             foreach (var property in propertyChangedArgs)
             {
@@ -180,7 +186,7 @@ namespace Gizmo.UI.View.Services
                     var fieldIdentifier = MarkModified(sender, property.PropertyName);
 
                     //validate property
-                    ValidateProperty(fieldIdentifier);
+                    await ValidatePropertyAsync(fieldIdentifier);
                 }
             }
 
