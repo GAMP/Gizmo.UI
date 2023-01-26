@@ -14,7 +14,7 @@ namespace Gizmo.UI
     public static class ServiceCollectionExtensions
     {
         #region FUNCTIONS
-        
+
         /// <summary>
         /// Registers view states in the di container.
         /// </summary>
@@ -143,7 +143,7 @@ namespace Gizmo.UI
         public static IServiceCollection AddDialogSerive<TService>(this IServiceCollection services) where TService : IDialogService
         {
             //add dialog service by type
-            services.TryAddSingleton(typeof(TService), (sp) => 
+            services.TryAddSingleton(typeof(TService), (sp) =>
             {
                 //get current compsition options
                 //they will contain the configuration
@@ -157,7 +157,9 @@ namespace Gizmo.UI
                     throw new ArgumentException("App assembly not configured.");
 
                 //load our app assembly
-                var requestingAssembly = Assembly.LoadFrom(appAssemblyName);
+                var requestingAssembly = AppDomain.CurrentDomain.GetAssemblies()
+                .Where(assembly => string.Compare(Path.GetFileName(assembly.GetName().CodeBase), appAssemblyName, true) == 0)
+                .FirstOrDefault();
 
                 //check if app assembly is loaded
                 if (requestingAssembly == null)
@@ -177,7 +179,7 @@ namespace Gizmo.UI
                 var dialogServiceType = dialogServices.First();
 
                 //create instance of dialog service
-                return ActivatorUtilities.CreateInstance(sp,dialogServiceType);
+                return ActivatorUtilities.CreateInstance(sp, dialogServiceType);
             });
 
             //add dialog service by interface
