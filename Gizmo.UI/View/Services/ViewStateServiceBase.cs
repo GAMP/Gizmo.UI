@@ -7,6 +7,10 @@ using Gizmo.UI.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Components;
 using System.Reflection;
+using System.Reactive.Joins;
+using System.Text.RegularExpressions;
+using System.Web;
+using System;
 
 namespace Gizmo.UI.View.Services
 {
@@ -415,8 +419,7 @@ namespace Gizmo.UI.View.Services
             if (!Uri.TryCreate(fullUrl, UriKind.Absolute, out var uri))
                 return false;
 
-            //TODO : Need to have correct matching of template (regx?)
-            return _associatedRoutes.Any(route => route.Template == uri.PathAndQuery);
-        }
-    }
+			return _associatedRoutes.Any(route => route.Template == uri.LocalPath);
+		}
+	}
 }
