@@ -6,12 +6,12 @@ using System.Reflection;
 namespace Gizmo.UI.Services
 {
     /// <summary>
-    /// Component discovery service base implementation.
+    /// UI Composition service base implementation.
     /// </summary>
-    public abstract class ComponentDiscoveryServiceBase : IComponentDiscoveryService , IDisposable
+    public abstract class UICompositionServiceBase : IUICompositionService , IDisposable
     {
         #region CONSTRUCTOR
-        public ComponentDiscoveryServiceBase(IOptionsMonitor<UICompositionOptions> optionsMonitor, ILogger logger, IServiceProvider serviceProvider)
+        public UICompositionServiceBase(IOptionsMonitor<UICompositionOptions> optionsMonitor, ILogger logger, IServiceProvider serviceProvider)
         {
             _optionsMonitor = optionsMonitor;
             _changeMonitor = _optionsMonitor.OnChange(OnCompositionSettingsChanged);
