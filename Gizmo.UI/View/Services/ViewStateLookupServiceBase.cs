@@ -21,19 +21,31 @@ namespace Gizmo.UI.View.Services
         #region FIELDS
         private readonly SemaphoreSlim _accessLock = new(1);
         private readonly SemaphoreSlim _initializeLock = new(1);
-        private readonly ConcurrentDictionary<TLookUpkey, TViewState> _cache = new();
+        protected readonly ConcurrentDictionary<TLookUpkey, TViewState> _cache = new();
         private bool _dataInitialized = false;
         private event EventHandler<EventArgs>? Changed;
         #endregion
 
-
-
+        /// <summary>
+        /// Gets all view states.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>View states.</returns>
         public async ValueTask<IEnumerable<TViewState>> GetAsync(CancellationToken cancellationToken)
         {
+            //this will trigger data initalization if required
             await EnsureDataInitialized(cancellationToken);
+
+            //return any generated view states
             return _cache.Values.AsEnumerable();
         }
 
+        /// <summary>
+        /// Gets view state specified by <paramref name="key"/>.
+        /// </summary>
+        /// <param name="key">View state key.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>View state.</returns>
         public async ValueTask<TViewState> GetAsync(TLookUpkey key, CancellationToken cancellationToken = default)
         {
             await EnsureDataInitialized(cancellationToken);
@@ -71,16 +83,19 @@ namespace Gizmo.UI.View.Services
                 _cache.Clear();
 
                 //initialize data
-               _dataInitialized = await DataInitializeAsync(cancellationToken);   
+               _dataInitialized = await DataInitializeAsync(cancellationToken);
+
+                //view states/data was changed
+                RaiseChanged();              
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Data initialization failed.");
+                _dataInitialized = false;
             }
             finally
             {
-                _initializeLock.Release();
-                _dataInitialized = false;
+                _initializeLock.Release();            
             }
         }
 
@@ -90,8 +105,9 @@ namespace Gizmo.UI.View.Services
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>True if initialization was successful, false if retry needed.</returns>
         /// <remarks>
-        /// The method is responsible of initializing initial data.
-        /// Example would be calling an service over api and getting required data and creating appropriate initial view states.
+        /// The method is responsible of initializing initial data.<br></br>
+        /// Example would be calling an service over api and getting required data and creating appropriate initial view states.<br></br>
+        /// <b>The function is thread safe.</b>
         /// </remarks>
         protected virtual Task<bool> DataInitializeAsync(CancellationToken cancellationToken)
         {
@@ -117,11 +133,15 @@ namespace Gizmo.UI.View.Services
         /// <returns>View state.</returns>
         /// <remarks>
         /// This function will be called in case we cant obtain associated data object for specified <paramref name="lookUpkey"/>.<br></br>
-        /// This will be used in cases of error in order to present default/errored view state for the view.
+        /// This will be used in cases of error in order to present default/errored view state for the view.<br></br>
+        /// <b>By default we will try to obtain uninitialized view state from DI container.</b>
         /// </remarks>
         /// <exception cref="ArgumentNullException">thrown if <typeparamref name="TViewState"/> is not registered in IOC container.</exception>
         protected virtual TViewState CreateDefaultViewStateAsync(TLookUpkey lookUpkey) => ServiceProvider.GetService<TViewState>() ?? throw new ArgumentNullException();
 
+        /// <summary>
+        /// Raises change event.
+        /// </summary>
         protected void RaiseChanged()
         {
             Changed?.Invoke(this, EventArgs.Empty);
