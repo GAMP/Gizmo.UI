@@ -41,7 +41,7 @@ namespace Gizmo.UI.View.Services
             await EnsureDataInitialized(cancellationToken);
 
             //return any generated view states
-            return _cache.Values.AsEnumerable();
+            return _cache.Values;
         }
 
         /// <summary>
