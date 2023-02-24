@@ -19,10 +19,14 @@ namespace Gizmo.UI.View.Services
         #endregion
 
         #region FIELDS
-        private readonly SemaphoreSlim _accessLock = new(1);
+        private readonly SemaphoreSlim _cacheAccessLock = new(1);
         private readonly SemaphoreSlim _initializeLock = new(1);
         protected readonly ConcurrentDictionary<TLookUpkey, TViewState> _cache = new();
         private bool _dataInitialized = false;
+        /// <summary>
+        /// Raised when managed view state collection changes, for example view state is added or removed.<br></br>
+        /// <b>This event is not raised when individual view state changes.</b>
+        /// </summary>
         private event EventHandler<EventArgs>? Changed;
         #endregion
 
@@ -48,8 +52,10 @@ namespace Gizmo.UI.View.Services
         /// <returns>View state.</returns>
         public async ValueTask<TViewState> GetAsync(TLookUpkey key, CancellationToken cancellationToken = default)
         {
+            //this will trigger data initalization if required
             await EnsureDataInitialized(cancellationToken);
-            await _accessLock.WaitAsync(cancellationToken);
+
+            await _cacheAccessLock.WaitAsync(cancellationToken);
             try
             {
                 if(_cache.TryGetValue(key, out TViewState? value)) return value;
@@ -67,16 +73,20 @@ namespace Gizmo.UI.View.Services
             }
             finally
             {
-               _accessLock.Release();
+               _cacheAccessLock.Release();
             }
             
         }
 
-        private async Task EnsureDataInitialized(CancellationToken cancellationToken)
+        private async ValueTask EnsureDataInitialized(CancellationToken cancellationToken)
         {
+            //make inital check without lock or await
+            if(_dataInitialized) return;
+
             await _initializeLock.WaitAsync(cancellationToken);
             try
             {
+                //re cehck initialization with lock
                 if(_dataInitialized) return;
 
                 //clar current cache
@@ -109,10 +119,7 @@ namespace Gizmo.UI.View.Services
         /// Example would be calling an service over api and getting required data and creating appropriate initial view states.<br></br>
         /// <b>The function is thread safe.</b>
         /// </remarks>
-        protected virtual Task<bool> DataInitializeAsync(CancellationToken cancellationToken)
-        {
-            return Task.FromResult(true);
-        }
+        protected abstract Task<bool> DataInitializeAsync(CancellationToken cancellationToken);
 
         /// <summary>
         /// Responsible of creating the view state.
@@ -122,7 +129,8 @@ namespace Gizmo.UI.View.Services
         /// <returns>View state.</returns>
         /// <remarks>
         /// This function will only be called if we cant obtain the view state with <paramref name="lookUpkey"/> specified from cache.<br></br>
-        /// It is responsible of obtaining view state for signle item.
+        /// It is responsible of obtaining view state for signle item.<br></br>
+        /// <b>This function should not attempt to modify cache, its only purpose to create view state.</b>
         /// </remarks>
         protected abstract ValueTask<TViewState> CreateViewStateAsync(TLookUpkey lookUpkey, CancellationToken cancellationToken = default);
 
@@ -146,6 +154,5 @@ namespace Gizmo.UI.View.Services
         {
             Changed?.Invoke(this, EventArgs.Empty);
         }
-
     }
 }
