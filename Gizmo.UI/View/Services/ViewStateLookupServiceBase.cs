@@ -9,10 +9,12 @@ namespace Gizmo.UI.View.Services
     /// </summary>
     /// <typeparam name="TLookUpkey">Lookup key.</typeparam>
     /// <typeparam name="TViewState">View state type.</typeparam>
-    public abstract class ViewStateLookupServiceBase<TLookUpkey, TViewState> : ViewServiceBase where TViewState : IViewState where TLookUpkey : notnull
+    public abstract class ViewStateLookupServiceBase<TLookUpkey, TViewState> : ViewServiceBase
+    where TLookUpkey : notnull
+    where TViewState : IViewState
     {
         #region CONSTRUCTOR
-        public ViewStateLookupServiceBase(ILogger logger, IServiceProvider serviceProvider) : base(logger, serviceProvider)
+        protected ViewStateLookupServiceBase(ILogger logger, IServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
         }
         #endregion
@@ -34,12 +36,12 @@ namespace Gizmo.UI.View.Services
         /// <summary>
         /// Gets all view states.
         /// </summary>
-        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="cToken">Cancellation token.</param>
         /// <returns>View states.</returns>
-        public async ValueTask<IEnumerable<TViewState>> GetAsync(CancellationToken cancellationToken)
+        public async ValueTask<IEnumerable<TViewState>> GetAsync(CancellationToken cToken = default)
         {
             //this will trigger data initalization if required
-            await EnsureDataInitialized(cancellationToken);
+            await EnsureDataInitialized(cToken);
 
             //return any generated view states
             return _cache.Values;
@@ -49,21 +51,21 @@ namespace Gizmo.UI.View.Services
         /// Gets view state specified by <paramref name="key"/>.
         /// </summary>
         /// <param name="key">View state key.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="cToken">Cancellation token.</param>
         /// <returns>View state.</returns>
-        public async ValueTask<TViewState> GetAsync(TLookUpkey key, CancellationToken cancellationToken = default)
+        public async ValueTask<TViewState> GetAsync(TLookUpkey key, CancellationToken cToken = default)
         {
             //this will trigger data initalization if required
-            await EnsureDataInitialized(cancellationToken);
+            await EnsureDataInitialized(cToken);
 
-            await _cacheAccessLock.WaitAsync(cancellationToken);
-            
+            await _cacheAccessLock.WaitAsync(cToken);
+
             try
             {
                 if (_cache.TryGetValue(key, out var value))
                     return value;
 
-                var viewState = await CreateViewStateAsync(key, cancellationToken);
+                var viewState = await CreateViewStateAsync(key, cToken);
 
                 _cache.Add(key, viewState);
 
@@ -95,14 +97,14 @@ namespace Gizmo.UI.View.Services
         {
             Changed?.Invoke(this, EventArgs.Empty);
         }
-        
-        private async ValueTask EnsureDataInitialized(CancellationToken cancellationToken)
+
+        private async ValueTask EnsureDataInitialized(CancellationToken cToken)
         {
             //make inital check without lock or await
             if (_dataInitialized)
                 return;
 
-            await _initializeLock.WaitAsync(cancellationToken);
+            await _initializeLock.WaitAsync(cToken);
 
             try
             {
@@ -114,7 +116,7 @@ namespace Gizmo.UI.View.Services
                 _cache.Clear();
 
                 //initialize data
-                _dataInitialized = await DataInitializeAsync(cancellationToken);
+                _dataInitialized = await DataInitializeAsync(cToken);
 
                 //view states/data was changed
                 RaiseChanged();
@@ -137,27 +139,27 @@ namespace Gizmo.UI.View.Services
         /// <summary>
         /// Initializes data.
         /// </summary>
-        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="cToken">Cancellation token.</param>
         /// <returns>True if initialization was successful, false if retry needed.</returns>
         /// <remarks>
         /// The method is responsible of initializing initial data.<br></br>
         /// Example would be calling an service over api and getting required data and creating appropriate initial view states.<br></br>
         /// <b>The function is thread safe.</b>
         /// </remarks>
-        protected abstract Task<bool> DataInitializeAsync(CancellationToken cancellationToken);
+        protected abstract Task<bool> DataInitializeAsync(CancellationToken cToken);
 
         /// <summary>
         /// Responsible of creating the view state.
         /// </summary>
         /// <param name="lookUpkey">View state lookup key.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="cToken">Cancellation token.</param>
         /// <returns>View state.</returns>
         /// <remarks>
         /// This function will only be called if we cant obtain the view state with <paramref name="lookUpkey"/> specified from cache.<br></br>
         /// It is responsible of obtaining view state for signle item.<br></br>
         /// <b>This function should not attempt to modify cache, its only purpose to create view state.</b>
         /// </remarks>
-        protected abstract ValueTask<TViewState> CreateViewStateAsync(TLookUpkey lookUpkey, CancellationToken cancellationToken = default);
+        protected abstract ValueTask<TViewState> CreateViewStateAsync(TLookUpkey lookUpkey, CancellationToken cToken = default);
 
         /// <summary>
         /// Creates default view state.
