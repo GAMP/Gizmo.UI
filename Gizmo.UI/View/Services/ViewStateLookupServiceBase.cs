@@ -1,6 +1,5 @@
-﻿using System.Collections.Concurrent;
-using Gizmo.UI.View.States;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Gizmo.UI.View.States;
+
 using Microsoft.Extensions.Logging;
 
 namespace Gizmo.UI.View.Services
@@ -10,18 +9,18 @@ namespace Gizmo.UI.View.Services
     /// </summary>
     /// <typeparam name="TLookUpkey">Lookup key.</typeparam>
     /// <typeparam name="TViewState">View state type.</typeparam>
-    public abstract class ViewStateLookupServiceBase<TLookUpkey,TViewState> : ViewServiceBase where TViewState : IViewState  where TLookUpkey : notnull
+    public abstract class ViewStateLookupServiceBase<TLookUpkey, TViewState> : ViewServiceBase where TViewState : IViewState where TLookUpkey : notnull
     {
         #region CONSTRUCTOR
         public ViewStateLookupServiceBase(ILogger logger, IServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
-        } 
+        }
         #endregion
 
         #region FIELDS
         private readonly SemaphoreSlim _cacheAccessLock = new(1);
         private readonly SemaphoreSlim _initializeLock = new(1);
-        protected readonly ConcurrentDictionary<TLookUpkey, TViewState> _cache = new();
+        private readonly Dictionary<TLookUpkey, TViewState> _cache = new();
         private bool _dataInitialized = false;
         /// <summary>
         /// Raised when managed view state collection changes, for example view state is added or removed.<br></br>
@@ -29,6 +28,8 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         private event EventHandler<EventArgs>? Changed;
         #endregion
+
+        #region METHODS
 
         /// <summary>
         /// Gets all view states.
@@ -56,47 +57,67 @@ namespace Gizmo.UI.View.Services
             await EnsureDataInitialized(cancellationToken);
 
             await _cacheAccessLock.WaitAsync(cancellationToken);
+            
             try
             {
-                if(_cache.TryGetValue(key, out TViewState? value)) return value;
+                if (_cache.TryGetValue(key, out var value))
+                    return value;
 
                 var viewState = await CreateViewStateAsync(key, cancellationToken);
 
-                _cache.TryAdd(key, viewState);
+                _cache.Add(key, viewState);
 
                 return viewState;
             }
-            catch(Exception ex) 
+            catch (Exception ex)
             {
-                Logger.LogError(ex,"Failed creating view state.");
-                return CreateDefaultViewStateAsync(key); 
+                Logger.LogError(ex, "Failed creating view state.");
+                return CreateDefaultViewState(key);
             }
             finally
             {
-               _cacheAccessLock.Release();
+                _cacheAccessLock.Release();
             }
-            
+
         }
 
+        /// <summary>
+        /// Add the state to the cache.
+        /// </summary>
+        /// <param name="lookUpkey">Lookup key.</param>
+        /// <param name="state">View state.</param>
+        protected void AddViewState(TLookUpkey lookUpkey, TViewState state) => _cache.Add(lookUpkey, state);
+
+        /// <summary>
+        /// Raises change event.
+        /// </summary>
+        protected void RaiseChanged()
+        {
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+        
         private async ValueTask EnsureDataInitialized(CancellationToken cancellationToken)
         {
             //make inital check without lock or await
-            if(_dataInitialized) return;
+            if (_dataInitialized)
+                return;
 
             await _initializeLock.WaitAsync(cancellationToken);
+
             try
             {
                 //re cehck initialization with lock
-                if(_dataInitialized) return;
+                if (_dataInitialized)
+                    return;
 
                 //clar current cache
                 _cache.Clear();
 
                 //initialize data
-               _dataInitialized = await DataInitializeAsync(cancellationToken);
+                _dataInitialized = await DataInitializeAsync(cancellationToken);
 
                 //view states/data was changed
-                RaiseChanged();              
+                RaiseChanged();
             }
             catch (Exception ex)
             {
@@ -105,9 +126,13 @@ namespace Gizmo.UI.View.Services
             }
             finally
             {
-                _initializeLock.Release();            
+                _initializeLock.Release();
             }
         }
+
+        #endregion
+
+        #region ABSTRACT METHODS
 
         /// <summary>
         /// Initializes data.
@@ -144,15 +169,9 @@ namespace Gizmo.UI.View.Services
         /// This will be used in cases of error in order to present default/errored view state for the view.<br></br>
         /// <b>By default we will try to obtain uninitialized view state from DI container.</b>
         /// </remarks>
-        /// <exception cref="ArgumentNullException">thrown if <typeparamref name="TViewState"/> is not registered in IOC container.</exception>
-        protected virtual TViewState CreateDefaultViewStateAsync(TLookUpkey lookUpkey) => ServiceProvider.GetService<TViewState>() ?? throw new ArgumentNullException();
+        /// <exception cref="InvalidOperationException">thrown if <typeparamref name="TViewState"/> is not registered in IOC container.</exception>
+        protected abstract TViewState CreateDefaultViewState(TLookUpkey lookUpkey);
 
-        /// <summary>
-        /// Raises change event.
-        /// </summary>
-        protected void RaiseChanged()
-        {
-            Changed?.Invoke(this, EventArgs.Empty);
-        }
+        #endregion
     }
 }
