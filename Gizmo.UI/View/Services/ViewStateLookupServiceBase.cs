@@ -38,7 +38,7 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         /// <param name="cToken">Cancellation token.</param>
         /// <returns>View states.</returns>
-        public async ValueTask<IEnumerable<TViewState>> GetAsync(CancellationToken cToken = default)
+        public async ValueTask<IEnumerable<TViewState>> GetStatesAsync(CancellationToken cToken = default)
         {
             //this will trigger data initalization if required
             await EnsureDataInitialized(cToken);
@@ -53,7 +53,7 @@ namespace Gizmo.UI.View.Services
         /// <param name="key">View state key.</param>
         /// <param name="cToken">Cancellation token.</param>
         /// <returns>View state.</returns>
-        public async ValueTask<TViewState> GetAsync(TLookUpkey key, CancellationToken cToken = default)
+        public async ValueTask<TViewState> GetStateAsync(TLookUpkey key, CancellationToken cToken = default)
         {
             //this will trigger data initalization if required
             await EnsureDataInitialized(cToken);
