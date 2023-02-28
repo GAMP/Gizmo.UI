@@ -28,7 +28,7 @@ namespace Gizmo.UI.View.Services
         /// Raised when managed view state collection changes, for example view state is added or removed.<br></br>
         /// <b>This event is not raised when individual view state changes.</b>
         /// </summary>
-        private event EventHandler<EventArgs>? Changed;
+        public event EventHandler<EventArgs>? Changed;
         #endregion
 
         #region METHODS
@@ -80,7 +80,6 @@ namespace Gizmo.UI.View.Services
             {
                 _cacheAccessLock.Release();
             }
-
         }
 
         /// <summary>
