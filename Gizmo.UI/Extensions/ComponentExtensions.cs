@@ -14,7 +14,7 @@ namespace Microsoft.AspNetCore.Components
         private static readonly string INVOKE_ASYNC_METHOD_NAME = "InvokeAsync";
         private static readonly Type COMPONENT_TYPE = typeof(ComponentBase);
         private static readonly MethodInfo? STATE_HAS_CHANGED_METHOD = COMPONENT_TYPE.GetMethod(STATE_HAS_CHANGED_METHOD_NAME, BindingFlags.NonPublic | BindingFlags.Instance);
-        private static readonly MethodInfo? INVOKE_ASYNC_METHOD = COMPONENT_TYPE.GetMethod(INVOKE_ASYNC_METHOD_NAME, BindingFlags.NonPublic | BindingFlags.Instance , new Type[] {typeof(Action)});
+        private static readonly MethodInfo? INVOKE_ASYNC_METHOD = COMPONENT_TYPE.GetMethod(INVOKE_ASYNC_METHOD_NAME, BindingFlags.NonPublic | BindingFlags.Instance, new Type[] { typeof(Action) });
         private static readonly ConcurrentDictionary<ComponentBase, EventHandler> _delegates = new();
         #endregion
 
@@ -35,7 +35,8 @@ namespace Microsoft.AspNetCore.Components
                 throw new ArgumentNullException(nameof(viewState));
 
             //create or get event handler for the component
-            var eventHandler = _delegates.GetOrAdd(component, new EventHandler((object? sender, EventArgs e) => {
+            var eventHandler = _delegates.GetOrAdd(component, new EventHandler((object? sender, EventArgs e) =>
+            {
 
                 if (STATE_HAS_CHANGED_METHOD is not null)
                 {
@@ -68,9 +69,9 @@ namespace Microsoft.AspNetCore.Components
             if (viewState == null)
                 throw new ArgumentNullException(nameof(viewState));
 
-            if(_delegates.TryRemove(component, out var eventHandler))
-                viewState.OnChange -= eventHandler;          
-        } 
+            if (_delegates.TryRemove(component, out var eventHandler))
+                viewState.OnChange -= eventHandler;
+        }
 
         #endregion
     }
