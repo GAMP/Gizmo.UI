@@ -336,7 +336,7 @@ namespace Gizmo.UI.View.Services
         {
             if (IsAssociatedRoute(e.Location))
             {
-                if (IsNavigatedTo)
+                if (!IsNavigatedTo)
                 {
                     IsNavigatedTo = true;
 
@@ -346,9 +346,6 @@ namespace Gizmo.UI.View.Services
                     _navigatedInCancellationSource = new CancellationTokenSource();
                     await OnNavigatedIn(new NavigationParameters(), _navigatedInCancellationSource.Token);
                 }
-
-                IsNavigatedTo = true;
-                await OnNavigatedIn();
             }
             else
             {
