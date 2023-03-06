@@ -336,7 +336,7 @@ namespace Gizmo.UI.View.Services
         {
             if (IsAssociatedRoute(e.Location))
             {
-                if (!IsNavigatedTo)
+                //if (!IsNavigatedTo)
                 {
                     IsNavigatedTo = true;
 
