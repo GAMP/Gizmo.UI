@@ -47,6 +47,11 @@ namespace Gizmo.UI.Services
             return _navigationManager?.Uri ?? string.Empty;
         }
 
+        public string GetBaseUri()
+        {
+            return _navigationManager?.BaseUri;
+        }
+
         #endregion
 
         #region EVENT HANDLERS

@@ -328,7 +328,10 @@ namespace Gizmo.UI.View.Services
         {
         }
 
-        
+
+        private CancellationTokenSource? _navigatedInCancellationSource = default;
+        private CancellationTokenSource? _navigatedOutCancellationSource = default;
+
         private async void OnLocationChangedInternal(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
         {
             if (IsAssociatedRoute(e.Location))
@@ -336,7 +339,12 @@ namespace Gizmo.UI.View.Services
                 if (!IsNavigatedTo)
                 {
                     IsNavigatedTo = true;
-                    await OnNavigatedIn();
+
+                    //cancel any current navigated out handlers
+                    _navigatedOutCancellationSource?.Cancel();
+
+                    _navigatedInCancellationSource = new CancellationTokenSource();
+                    await OnNavigatedIn(new NavigationParameters(), _navigatedInCancellationSource.Token);
                 }
             }
             else
@@ -344,7 +352,12 @@ namespace Gizmo.UI.View.Services
                 if (IsNavigatedTo)
                 {
                     IsNavigatedTo = false;
-                    await OnNavigatedOut();               
+
+                    //cancel any currently running navigated in handlers
+                    _navigatedInCancellationSource?.Cancel();
+              
+                    _navigatedOutCancellationSource = new CancellationTokenSource();
+                    await OnNavigatedOut(new NavigationParameters(), _navigatedOutCancellationSource.Token);
                 }
             }
 
@@ -364,7 +377,7 @@ namespace Gizmo.UI.View.Services
         /// <summary>
         /// Called once application navigates into one of view service associated routes.
         /// </summary>
-        protected virtual Task OnNavigatedIn()
+        protected virtual Task OnNavigatedIn(NavigationParameters navigationParameters, CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
         }
@@ -372,7 +385,7 @@ namespace Gizmo.UI.View.Services
         /// <summary>
         /// Called once application navigates to route that does not match any view service associated routes.
         /// </summary>
-        protected virtual Task OnNavigatedOut()
+        protected virtual Task OnNavigatedOut(NavigationParameters navigationParameters, CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
         }
@@ -419,7 +432,15 @@ namespace Gizmo.UI.View.Services
             if (!Uri.TryCreate(fullUrl, UriKind.Absolute, out var uri))
                 return false;
 
-			return _associatedRoutes.Any(route => route.Template == uri.LocalPath);
-		}
-	}
+            return _associatedRoutes.Any(route => route.Template == uri.LocalPath);
+        }
+    }
+
+    public class NavigationParameters
+    {
+        /// <summary>
+        /// Indicates if initial navigation event.
+        /// </summary>
+        public bool IsInitial { get; init; }
+    }
 }
