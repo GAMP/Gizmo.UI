@@ -333,18 +333,21 @@ namespace Gizmo.UI.View.Services
         {
             if (IsAssociatedRoute(e.Location))
             {
-                if (!IsNavigatedTo)
+                if (IsNavigatedTo)
                 {
-                    IsNavigatedTo = true;
-                    await OnNavigatedIn();
+                    //Navigated to the same page, possibly with different parameters.
+                    await OnNavigatedOut();
                 }
+
+                IsNavigatedTo = true;
+                await OnNavigatedIn();
             }
             else
             {
                 if (IsNavigatedTo)
                 {
                     IsNavigatedTo = false;
-                    await OnNavigatedOut();               
+                    await OnNavigatedOut();
                 }
             }
 
