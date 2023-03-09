@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Gizmo.UI.View.Services
 {
@@ -115,6 +116,11 @@ namespace Gizmo.UI.View.Services
         protected virtual void OnDisposing(bool isDisposing)
         {
             //disposing code goes here
+        }
+
+        public virtual Task ExecuteCommandAsync<TCommand>(TCommand command) where TCommand : notnull, IViewServiceCommand
+        {
+            throw new NotImplementedException(JsonSerializer.Serialize(command));
         }
 
         #endregion
