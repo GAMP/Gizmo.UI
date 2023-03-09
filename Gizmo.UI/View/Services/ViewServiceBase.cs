@@ -97,6 +97,11 @@ namespace Gizmo.UI.View.Services
         {
             return Task.CompletedTask;
         }
+        /// <inheritdoc/>
+        public virtual Task ExecuteCommandAsync<TCommand>(TCommand command, CancellationToken cToken = default) where TCommand : notnull, IViewServiceCommand
+        {
+            throw new NotImplementedException(JsonSerializer.Serialize(command));
+        }
 
         #endregion
 
@@ -116,11 +121,6 @@ namespace Gizmo.UI.View.Services
         protected virtual void OnDisposing(bool isDisposing)
         {
             //disposing code goes here
-        }
-
-        public virtual Task ExecuteCommandAsync<TCommand>(TCommand command) where TCommand : notnull, IViewServiceCommand
-        {
-            throw new NotImplementedException(JsonSerializer.Serialize(command));
         }
 
         #endregion
