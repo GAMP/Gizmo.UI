@@ -86,6 +86,13 @@ namespace Gizmo.UI.Services
         }
 
         /// <inheritdoc/>
+        public string GetString(Enum enumValue)
+        {
+            //TODO: AAA
+            return enumValue.ToString();
+        }
+
+        /// <inheritdoc/>
         public virtual string GetString(string key, params object[] arguments)
         {
             return Localizer.GetString(key, arguments);
