@@ -97,11 +97,17 @@ namespace Gizmo.UI.View.Services
         {
             return Task.CompletedTask;
         }
+        /// <summary>
+        /// Execute the command of the service.
+        /// </summary>
+        /// <typeparam name="TCommand">Command type that implements IViewServiceCommand interface.</typeparam>
+        /// <param name="command">Command from URL.</param>
+        /// <param name="cToken">CancellationToken.</param>
+        /// <returns>Task of the command.</returns>
         /// <inheritdoc/>
-        public virtual Task ExecuteCommandAsync<TCommand>(TCommand command, CancellationToken cToken = default) where TCommand : notnull, IViewServiceCommand
-        {
+        /// <exception cref="NotImplementedException">If the function isn't implemented</exeption>
+        public virtual Task ExecuteCommandAsync<TCommand>(TCommand command, CancellationToken cToken = default) where TCommand : notnull, IViewServiceCommand =>
             throw new NotImplementedException(JsonSerializer.Serialize(command));
-        }
 
         #endregion
 
