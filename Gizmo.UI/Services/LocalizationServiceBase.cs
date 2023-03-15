@@ -24,12 +24,6 @@ namespace Gizmo.UI.Services
         private readonly object[] _DEFAULT_ARGS = Array.Empty<object>();
         private readonly IStringLocalizer _localizer;
         private readonly ILogger _logger;
-        private readonly HashSet<RegionInfo> _regions = new()
-        {
-            new RegionInfo("us"),
-            new RegionInfo("ru"),
-            new RegionInfo("gr")
-        };
         private readonly HashSet<CultureInfo> _cultures = new()
         {
             new CultureInfo("en-US"),
@@ -42,10 +36,7 @@ namespace Gizmo.UI.Services
         #region PUBLIC
 
         /// <inheritdoc/>
-        public IEnumerable<RegionInfo> SupportedRegions => _regions;
-
-        /// <inheritdoc/>
-        public IEnumerable<CultureInfo> SupportedCultures => _cultures;
+        public virtual IEnumerable<CultureInfo> SupportedCultures => _cultures;
 
         #endregion
 
@@ -120,15 +111,6 @@ namespace Gizmo.UI.Services
         public string GetStringLower(string key, params object[] arguments)
         {
             return GetString(key, arguments).ToLower();
-        }
-
-        /// <inheritdoc/>
-        public virtual void SetCurrentCulture(CultureInfo culture)
-        {
-            Logger.LogTrace("Setting current culture to {culture}.",culture);
-
-            CultureInfo.CurrentCulture = culture;
-            CultureInfo.CurrentUICulture = culture;
         }
 
         #endregion
