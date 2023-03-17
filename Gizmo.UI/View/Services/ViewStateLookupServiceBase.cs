@@ -1,4 +1,5 @@
-﻿using Gizmo.UI.View.States;
+﻿using System.Diagnostics.CodeAnalysis;
+using Gizmo.UI.View.States;
 
 using Microsoft.Extensions.Logging;
 
@@ -80,6 +81,17 @@ namespace Gizmo.UI.View.Services
             {
                 _cacheAccessLock.Release();
             }
+        }
+
+        /// <summary>
+        /// Tries to obtain view state from the cache.
+        /// </summary>
+        /// <param name="lookUpkey">View state key.</param>
+        /// <param name="state">View state.</param>
+        /// <returns>True if found in cache, otherwise false.</returns>
+        protected bool TryGetState(TLookUpkey lookUpkey, [NotNullWhen(true)] out TViewState? state)
+        {
+            return _cache.TryGetValue(lookUpkey, out state);
         }
 
         /// <summary>
