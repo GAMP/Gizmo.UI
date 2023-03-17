@@ -9,8 +9,8 @@ namespace Gizmo.UI.Services
     public sealed class NavigationService
     {
         #region FIELDS
-        
-        private NavigationManager? _navigationManager; 
+
+        private NavigationManager? _navigationManager;
 
         #endregion
 
@@ -24,7 +24,7 @@ namespace Gizmo.UI.Services
         #endregion
 
         #region FUNCTIONS
-        
+
         public void AssociateNavigtionManager(NavigationManager navigationManager)
         {
             if (navigationManager == null)
@@ -34,6 +34,8 @@ namespace Gizmo.UI.Services
             {
                 _navigationManager = navigationManager;
                 _navigationManager.LocationChanged += OnNavigationManagerLocationChanged;
+
+                LocationChanged?.Invoke(this, new LocationChangedEventArgs(navigationManager.Uri, false));
             }
         }
 
@@ -49,7 +51,7 @@ namespace Gizmo.UI.Services
 
         public string GetBaseUri()
         {
-            return _navigationManager?.BaseUri;
+            return _navigationManager?.BaseUri ?? string.Empty;
         }
 
         #endregion
@@ -59,7 +61,7 @@ namespace Gizmo.UI.Services
         private void OnNavigationManagerLocationChanged(object? sender, LocationChangedEventArgs e)
         {
             LocationChanged?.Invoke(this, e);
-        }       
+        }
 
         #endregion
     }

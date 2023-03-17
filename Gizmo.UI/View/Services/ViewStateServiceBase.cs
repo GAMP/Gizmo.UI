@@ -1,16 +1,14 @@
-﻿using Microsoft.Extensions.Logging;
-using System.Reactive.Subjects;
-using System.Reactive.Linq;
+﻿using System.Collections.Concurrent;
 using System.ComponentModel;
-using Gizmo.UI.View.States;
-using Gizmo.UI.Services;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Components;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Reflection;
-using System.Reactive.Joins;
-using System.Text.RegularExpressions;
-using System.Web;
-using System;
+using Gizmo.UI.Services;
+using Gizmo.UI.View.States;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Gizmo.UI.View.Services
 {
@@ -21,40 +19,40 @@ namespace Gizmo.UI.View.Services
     public abstract class ViewStateServiceBase<TViewState> : ViewServiceBase where TViewState : IViewState
     {
         #region CONSTRUCTOR
-        public ViewStateServiceBase(TViewState viewState, ILogger logger, IServiceProvider serviceProvider) : base(logger, serviceProvider)
+        protected ViewStateServiceBase(
+            TViewState viewState,
+            ILogger logger,
+            IServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
-            _viewState = viewState;
-            _navigationService = serviceProvider.GetRequiredService<NavigationService>();
+            ViewState = viewState;
+            NavigationService = serviceProvider.GetRequiredService<NavigationService>();
             _associatedRoutes = GetType().GetCustomAttributes<RouteAttribute>() ?? Enumerable.Empty<RouteAttribute>();
         }
         #endregion
 
         #region FIELDS
-        private readonly TViewState _viewState;
         private readonly Subject<IViewState> _stateChnageDebounceSubject = new();
         private readonly Subject<Tuple<object, PropertyChangedEventArgs>> _propertyChangedDebounceSubject = new();
         private IDisposable? _propertyChangedDebounceSubscription;
         private IDisposable? _stateChangeDebounceSubscription;
         private int _stateChangedDebounceBufferTime = 1000;  //buffer state changes for 1 second by default
         private int _propertyChangedBufferTime = 1000; //buffer state changes for 1 second by default
-        private readonly NavigationService _navigationService;
+
         private readonly IEnumerable<RouteAttribute> _associatedRoutes; //set of associated routes
+        private static readonly ConcurrentDictionary<string, bool> NavigatedRoutes = new(); //keep visited routes and local paths of URL
         #endregion
 
         #region PROPERTIES
 
         /// <summary>
-        /// Gets if current application route matches current view state service. 
-        /// </summary>
-        protected bool IsNavigatedTo { get; private set; }
-
-        /// <summary>
         /// Gets view state.
         /// </summary>
-        public TViewState ViewState
-        {
-            get { return _viewState; }
-        }
+        public TViewState ViewState { get; }
+
+        /// <summary>
+        /// Gets navigation service.
+        /// </summary>
+        protected NavigationService NavigationService { get; }
 
         /// <summary>
         /// Gets or sets defaul view state changed buffer time in milliseconds.
@@ -92,14 +90,6 @@ namespace Gizmo.UI.View.Services
                 //resubscribe
                 PropertyChangedDebounceSubscribe();
             }
-        }
-
-        /// <summary>
-        /// Gets navigation service.
-        /// </summary>
-        protected NavigationService NavigationService
-        {
-            get { return _navigationService; }
         }
 
         #endregion
@@ -182,6 +172,59 @@ namespace Gizmo.UI.View.Services
                      }
                  }
              });
+        }
+
+        private CancellationTokenSource? _navigatedInCancellationSource;
+        private CancellationTokenSource? _navigatedOutCancellationSource;
+
+        private async void OnLocationChangedInternal(object? _, LocationChangedEventArgs args)
+        {
+            var (isFirstNavigation, isNavigatedIn) = GeLocationChangedInternalState(args.Location);
+
+            if (isNavigatedIn)
+            {
+                //cancel any current navigated out handlers
+                _navigatedOutCancellationSource?.Cancel();
+
+                _navigatedInCancellationSource = new();
+
+                await OnNavigatedIn(new(isFirstNavigation, args.IsNavigationIntercepted), _navigatedInCancellationSource.Token);
+            }
+            else
+            {
+                //cancel any currently running navigated in handlers
+                _navigatedInCancellationSource?.Cancel();
+
+                _navigatedOutCancellationSource = new();
+
+                await OnNavigatedOut(new(false, args.IsNavigationIntercepted), _navigatedOutCancellationSource.Token);
+            }
+
+            OnLocationChanged(_, args);
+        }
+
+        /// <summary>
+        /// Get information about a state of the incoming location.
+        /// </summary>
+        /// <param name="location">Location from the LocationChangedEventArgs.</param>
+        /// <returns>
+        /// 1 boolean - If it is the first navigation by this location.
+        /// 2 boolean - If this location is this RouteAttribute.Template.
+        /// </returns>
+        private (bool, bool) GeLocationChangedInternalState(string location)
+        {
+            if (NavigatedRoutes.TryGetValue(location, out var isNavigatedIn))
+                return (false, isNavigatedIn);
+
+            if (!Uri.TryCreate(location, UriKind.Absolute, out var uri))
+                throw new ArgumentException("Route is not valid", location);
+
+            isNavigatedIn = _associatedRoutes.Any(route => route.Template == uri.LocalPath);
+
+            while (!NavigatedRoutes.TryAdd(location, isNavigatedIn))
+                ;
+
+            return (true, isNavigatedIn);
         }
 
         #endregion
@@ -328,50 +371,13 @@ namespace Gizmo.UI.View.Services
         {
         }
 
-
-        private CancellationTokenSource? _navigatedInCancellationSource = default;
-        private CancellationTokenSource? _navigatedOutCancellationSource = default;
-
-        private async void OnLocationChangedInternal(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
-        {
-            if (IsAssociatedRoute(e.Location))
-            {
-                //if (!IsNavigatedTo)
-                {
-                    IsNavigatedTo = true;
-
-                    //cancel any current navigated out handlers
-                    _navigatedOutCancellationSource?.Cancel();
-
-                    _navigatedInCancellationSource = new CancellationTokenSource();
-                    await OnNavigatedIn(new NavigationParameters(), _navigatedInCancellationSource.Token);
-                }
-            }
-            else
-            {
-                if (IsNavigatedTo)
-                {
-                    IsNavigatedTo = false;
-
-                    //cancel any currently running navigated in handlers
-                    _navigatedInCancellationSource?.Cancel();
-              
-                    _navigatedOutCancellationSource = new CancellationTokenSource();
-                    await OnNavigatedOut(new NavigationParameters(), _navigatedOutCancellationSource.Token);
-                }
-            }
-
-            OnLocationChanged(sender, e);
-        }
-
         /// <summary>
         /// Called after current application location changed.
         /// </summary>
         /// <param name="sender">Sender.</param>
         /// <param name="e">Location change parameters.</param>
-        protected virtual void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+        protected virtual void OnLocationChanged(object? sender, LocationChangedEventArgs e)
         {
-
         }
 
         /// <summary>
@@ -422,25 +428,7 @@ namespace Gizmo.UI.View.Services
         }
 
         #endregion
-
-        /// <summary>
-        /// Checks if current application url matches one of view service associated routes.
-        /// </summary>
-        /// <param name="fullUrl">Current application location url.</param>
-        private bool IsAssociatedRoute(string fullUrl)
-        {
-            if (!Uri.TryCreate(fullUrl, UriKind.Absolute, out var uri))
-                return false;
-
-            return _associatedRoutes.Any(route => route.Template == uri.LocalPath);
-        }
     }
 
-    public class NavigationParameters
-    {
-        /// <summary>
-        /// Indicates if initial navigation event.
-        /// </summary>
-        public bool IsInitial { get; init; }
-    }
+    public record NavigationParameters(bool IsInitial, bool IsByLink);
 }
