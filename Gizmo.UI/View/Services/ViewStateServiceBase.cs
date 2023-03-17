@@ -26,7 +26,10 @@ namespace Gizmo.UI.View.Services
         {
             ViewState = viewState;
             NavigationService = serviceProvider.GetRequiredService<NavigationService>();
-            _associatedRoutes = GetType().GetCustomAttributes<RouteAttribute>() ?? Enumerable.Empty<RouteAttribute>();
+
+            _associatedRoutes = GetType().GetCustomAttributes<RouteAttribute>().ToList() ?? Enumerable.Empty<RouteAttribute>().ToList();
+            _navigatedRoutes = new(5, _associatedRoutes.Count);
+            _stackRoutes = new();
         }
         #endregion
 
@@ -38,8 +41,9 @@ namespace Gizmo.UI.View.Services
         private int _stateChangedDebounceBufferTime = 1000;  //buffer state changes for 1 second by default
         private int _propertyChangedBufferTime = 1000; //buffer state changes for 1 second by default
 
-        private readonly IEnumerable<RouteAttribute> _associatedRoutes; //set of associated routes
-        private static readonly ConcurrentDictionary<string, bool> NavigatedRoutes = new(); //keep visited routes and local paths of URL
+        private readonly List<RouteAttribute> _associatedRoutes; //set of associated routes
+        private readonly ConcurrentDictionary<string, bool> _navigatedRoutes; //keep visited routes and local paths of URL
+        private readonly ConcurrentStack<string> _stackRoutes; //keep visited routes
         #endregion
 
         #region PROPERTIES
@@ -183,6 +187,8 @@ namespace Gizmo.UI.View.Services
 
             if (isNavigatedIn)
             {
+                _stackRoutes.Push(args.Location);
+
                 //cancel any current navigated out handlers
                 _navigatedOutCancellationSource?.Cancel();
 
@@ -192,6 +198,10 @@ namespace Gizmo.UI.View.Services
             }
             else
             {
+                // if we have no previous location - return
+                if (!_stackRoutes.TryPop(out var _))
+                    return;
+
                 //cancel any currently running navigated in handlers
                 _navigatedInCancellationSource?.Cancel();
 
@@ -213,7 +223,7 @@ namespace Gizmo.UI.View.Services
         /// </returns>
         private (bool, bool) GeLocationChangedInternalState(string location)
         {
-            if (NavigatedRoutes.TryGetValue(location, out var isNavigatedIn))
+            if (_navigatedRoutes.TryGetValue(location, out var isNavigatedIn))
                 return (false, isNavigatedIn);
 
             if (!Uri.TryCreate(location, UriKind.Absolute, out var uri))
@@ -221,7 +231,7 @@ namespace Gizmo.UI.View.Services
 
             isNavigatedIn = _associatedRoutes.Any(route => route.Template == uri.LocalPath);
 
-            while (!NavigatedRoutes.TryAdd(location, isNavigatedIn))
+            while (!_navigatedRoutes.TryAdd(location, isNavigatedIn))
                 ;
 
             return (true, isNavigatedIn);
