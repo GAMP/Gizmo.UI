@@ -97,6 +97,7 @@ namespace Gizmo.UI.View.Services
         {
             return Task.CompletedTask;
         }
+
         /// <summary>
         /// Execute the command of the service.
         /// </summary>

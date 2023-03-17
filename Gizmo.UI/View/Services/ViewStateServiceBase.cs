@@ -7,10 +7,6 @@ using Gizmo.UI.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Components;
 using System.Reflection;
-using System.Reactive.Joins;
-using System.Text.RegularExpressions;
-using System.Web;
-using System;
 
 namespace Gizmo.UI.View.Services
 {
