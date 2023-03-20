@@ -26,6 +26,7 @@ namespace Gizmo.UI.View.Services
         {
             ViewState = viewState;
             NavigationService = serviceProvider.GetRequiredService<NavigationService>();
+            _debounceService = serviceProvider.GetRequiredService<ViewStateDebounceService>();
 
             _associatedRoutes = GetType().GetCustomAttributes<RouteAttribute>().ToList() ?? Enumerable.Empty<RouteAttribute>().ToList();
             _navigatedRoutes = new(5, _associatedRoutes.Count);
@@ -38,12 +39,13 @@ namespace Gizmo.UI.View.Services
         private readonly Subject<Tuple<object, PropertyChangedEventArgs>> _propertyChangedDebounceSubject = new();
         private IDisposable? _propertyChangedDebounceSubscription;
         private IDisposable? _stateChangeDebounceSubscription;
-        private int _stateChangedDebounceBufferTime = 1000;  //buffer state changes for 1 second by default
         private int _propertyChangedBufferTime = 1000; //buffer state changes for 1 second by default
 
         private readonly List<RouteAttribute> _associatedRoutes; //set of associated routes
         private readonly ConcurrentDictionary<string, bool> _navigatedRoutes; //keep visited routes and local paths of URL
         private readonly ConcurrentStack<string> _stackRoutes; //keep visited routes
+
+        private readonly ViewStateDebounceService _debounceService;
         #endregion
 
         #region PROPERTIES
@@ -57,25 +59,6 @@ namespace Gizmo.UI.View.Services
         /// Gets navigation service.
         /// </summary>
         protected NavigationService NavigationService { get; }
-
-        /// <summary>
-        /// Gets or sets defaul view state changed buffer time in milliseconds.
-        /// </summary>
-        protected int StateChangedDebounceBufferTime
-        {
-            get { return _stateChangedDebounceBufferTime; }
-            set
-            {
-                if (value <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(StateChangedDebounceBufferTime));
-
-                //update current value
-                _stateChangedDebounceBufferTime = value;
-
-                //resubscribe
-                StateChangedDebounceSubscribe();
-            }
-        }
 
         /// <summary>
         /// Gets or sets default view property changed buffer time in milliseconds.
@@ -99,33 +82,6 @@ namespace Gizmo.UI.View.Services
         #endregion
 
         #region PRIVATE FUNCTIONS
-
-        private void StateChangedDebounceSubscribe()
-        {
-            //dispose any existing subscriptions
-            _stateChangeDebounceSubscription?.Dispose();
-
-            //resubscribe
-            _stateChangeDebounceSubscription = _stateChnageDebounceSubject
-                .Buffer(TimeSpan.FromMilliseconds(StateChangedDebounceBufferTime))
-                .Where(buffer => buffer.Count > 0)
-                .Distinct()
-                .Subscribe(viewStates =>
-                {
-                    foreach (IViewState changedViewState in viewStates)
-                    {
-                        try
-                        {
-                            changedViewState.RaiseChanged();
-                        }
-                        catch (Exception ex)
-                        {
-                            //the handlers are outside of our code so we should handle the exception and log it
-                            Logger.LogError(ex, "Error in view state change debounce handler.");
-                        }
-                    }
-                });
-        }
 
         private void PropertyChangedDebounceSubscribe()
         {
@@ -246,21 +202,12 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         protected void DebounceViewStateChange()
         {
-            DebounceViewStateChange(ViewState);
+            _debounceService.Debounce(ViewState);
         }
 
-        /// <summary>
-        /// Debounces view state change.
-        /// </summary>
-        /// <param name="viewState">View state.</param>
-        /// <exception cref="ArgumentNullException">thrown in case<paramref name="viewState"/>being equal to null.</exception>
         protected void DebounceViewStateChange(IViewState viewState)
         {
-            if (viewState == null)
-                throw new ArgumentNullException(nameof(viewState));
-
-            //push the state to the subject
-            _stateChnageDebounceSubject.OnNext(viewState);
+            _debounceService.Debounce(viewState);
         }
 
         /// <summary>
@@ -412,7 +359,6 @@ namespace Gizmo.UI.View.Services
 
         protected override Task OnInitializing(CancellationToken ct)
         {
-            StateChangedDebounceSubscribe();
             PropertyChangedDebounceSubscribe();
 
             Attach(ViewState);
