@@ -18,9 +18,13 @@ public abstract class DebounceServiceBase<T> : IDisposable
 
     #region FIELDS
 
-    private readonly Subject<T> _subject = new();
-    private int _debounceBufferTime = 1000; // 1 sec by default
+    private bool _isInitialized;
+    private Timer? _timer;
+    private Subject<T>? _subject;
     private IDisposable? _subscription;
+
+    private int _debounceBufferTime = 1000; // 1 sec by default
+    private int _debounceLifeTime = 60 * 1000 * 10; // 10 min by default debounce lifetime
 
     #endregion
 
@@ -28,7 +32,11 @@ public abstract class DebounceServiceBase<T> : IDisposable
 
     protected ILogger Logger { get; }
 
-    protected int DebounceBufferTime
+    /// <summary>
+    /// Debounce buffertime.
+    /// </summary>
+    /// <value></value>
+    public int DebounceBufferTime
     {
         get { return _debounceBufferTime; }
         set
@@ -37,10 +45,28 @@ public abstract class DebounceServiceBase<T> : IDisposable
                 throw new ArgumentOutOfRangeException(nameof(DebounceBufferTime));
 
             //update current value
-            _debounceBufferTime = value;
+            if (value >= DebounceLifeTime)
+                _debounceBufferTime = DebounceLifeTime - 100;
+            else
+                _debounceBufferTime = value;
 
             //resubscribe
+            Dispose();
             DebounceSubscribe();
+        }
+    }
+    /// <summary>
+    /// Debounce lifetime.
+    /// </summary>
+    /// <value></value>
+    public int DebounceLifeTime
+    {
+        get { return _debounceLifeTime; }
+        set
+        {
+            if (value <= _debounceBufferTime)
+                _debounceLifeTime = _debounceBufferTime + 100;
+            _debounceLifeTime = value;
         }
     }
 
@@ -53,13 +79,21 @@ public abstract class DebounceServiceBase<T> : IDisposable
         if (item is null)
             throw new ArgumentNullException(nameof(item));
 
-        _subject.OnNext(item);
+        if (!_isInitialized)
+            DebounceSubscribe();
+
+        _subject!.OnNext(item);
     }
 
     public void Dispose()
     {
+        _timer?.Dispose();
         _subject?.Dispose();
         _subscription?.Dispose();
+
+        _timer = null;
+        _subject = null;
+        _subscription = null;
     }
 
     #endregion
@@ -68,11 +102,10 @@ public abstract class DebounceServiceBase<T> : IDisposable
 
     private void DebounceSubscribe()
     {
-        //dispose any existing subscriptions
-        _subscription?.Dispose();
+        _subject = new();
 
-        //resubscribe
-        _subscription = _subject
+        // The debounce action
+        _subscription = _subject!
             .Buffer(TimeSpan.FromMilliseconds(_debounceBufferTime))
             .Where(items => items.Count > 0)
             .Distinct()
@@ -91,8 +124,16 @@ public abstract class DebounceServiceBase<T> : IDisposable
                     }
                 }
             });
-    }
 
+        // The debounce lifetime
+        _timer = new Timer((object? _) =>
+        {
+            Dispose();
+            _isInitialized = false;
+        }, null, TimeSpan.FromMinutes(_debounceLifeTime), TimeSpan.FromMilliseconds(-1));
+
+        _isInitialized = true;
+    }
     #endregion
 
     #region ABSTRACT FUNCTIONS

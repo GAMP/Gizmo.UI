@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Gizmo.UI.View.States;
+using Microsoft.Extensions.DependencyInjection;
 
 using Microsoft.Extensions.Logging;
 
@@ -17,10 +18,12 @@ namespace Gizmo.UI.View.Services
         #region CONSTRUCTOR
         protected ViewStateLookupServiceBase(ILogger logger, IServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
+            _debounceService = serviceProvider.GetRequiredService<ViewStateDebounceService>();
         }
         #endregion
 
         #region FIELDS
+        private readonly ViewStateDebounceService _debounceService;
         private readonly SemaphoreSlim _cacheAccessLock = new(1);
         private readonly SemaphoreSlim _initializeLock = new(1);
         private readonly Dictionary<TLookUpkey, TViewState> _cache = new();
@@ -107,6 +110,11 @@ namespace Gizmo.UI.View.Services
         protected void RaiseChanged()
         {
             Changed?.Invoke(this, EventArgs.Empty);
+        }
+
+        protected void DebounceViewStateChange(IViewState viewState)
+        {
+            _debounceService.Debounce(viewState);
         }
 
         private async ValueTask EnsureDataInitialized(CancellationToken cToken)

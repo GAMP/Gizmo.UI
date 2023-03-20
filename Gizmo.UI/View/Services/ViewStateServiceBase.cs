@@ -38,7 +38,6 @@ namespace Gizmo.UI.View.Services
         private readonly Subject<IViewState> _stateChnageDebounceSubject = new();
         private readonly Subject<Tuple<object, PropertyChangedEventArgs>> _propertyChangedDebounceSubject = new();
         private IDisposable? _propertyChangedDebounceSubscription;
-        private IDisposable? _stateChangeDebounceSubscription;
         private int _propertyChangedBufferTime = 1000; //buffer state changes for 1 second by default
 
         private readonly List<RouteAttribute> _associatedRoutes; //set of associated routes
@@ -370,7 +369,6 @@ namespace Gizmo.UI.View.Services
 
         protected override void OnDisposing(bool isDisposing)
         {
-            _stateChangeDebounceSubscription?.Dispose();
             _stateChnageDebounceSubject?.Dispose();
 
             _propertyChangedDebounceSubject?.Dispose();
