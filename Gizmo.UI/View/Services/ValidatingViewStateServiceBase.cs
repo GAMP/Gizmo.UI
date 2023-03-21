@@ -197,27 +197,6 @@ namespace Gizmo.UI.View.Services
 
         #region OVERRIDES
 
-        protected override async Task OnViewStatePropertyChangedDebouncedAsync(object sender, IEnumerable<PropertyChangedEventArgs> propertyChangedArgs)
-        {
-            await base.OnViewStatePropertyChangedDebouncedAsync(sender, propertyChangedArgs);
-
-            foreach (var property in propertyChangedArgs)
-            {
-                //check is required to avoid nullable compilation errors
-                if (!string.IsNullOrEmpty(property.PropertyName))
-                {
-                    //mark the field as modified
-                    var fieldIdentifier = MarkModified(sender, property.PropertyName);
-
-                    //validate property
-                    await ValidatePropertyAsync(fieldIdentifier);
-                }
-            }
-
-            EditContext.NotifyValidationStateChanged();
-            ViewStateChanged();
-        }
-
         protected override Task OnInitializing(CancellationToken ct)
         {
             _editContext.OnValidationStateChanged += OnEditContextValidationStateChanged;
