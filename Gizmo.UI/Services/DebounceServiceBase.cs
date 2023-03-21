@@ -125,12 +125,12 @@ public abstract class DebounceServiceBase<T> : IDisposable
                 }
             });
 
-        // The debounce lifetime
-        _timer = new Timer((object? _) =>
-        {
-            Dispose();
-            _isInitialized = false;
-        }, null, TimeSpan.FromMinutes(_debounceLifeTime), TimeSpan.FromMilliseconds(-1));
+        //// The debounce lifetime
+        //_timer = new Timer((object? _) =>
+        //{
+        //    Dispose();
+        //    _isInitialized = false;
+        //}, null, TimeSpan.FromMinutes(_debounceLifeTime), TimeSpan.FromMilliseconds(-1));
 
         _isInitialized = true;
     }
