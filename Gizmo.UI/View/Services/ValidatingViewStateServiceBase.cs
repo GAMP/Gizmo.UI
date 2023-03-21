@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel;
+using System.Linq.Expressions;
 using System.Reactive.Linq;
 
 namespace Gizmo.UI.View.Services
@@ -78,6 +79,29 @@ namespace Gizmo.UI.View.Services
 
             //once we have validated the properties raise validation state change event            
             _editContext.NotifyValidationStateChanged();
+        }
+
+        protected void ValidateProperty(Expression<Func<TViewState, object>> property)
+        {
+            MemberExpression body = (MemberExpression)property.Body;
+            var propertyName = body.Member.Name;
+
+            ValidateProperty(new FieldIdentifier(ViewState, propertyName));
+            EditContext.NotifyValidationStateChanged();
+        }
+        
+        protected void ValidateProperty(FieldIdentifier fieldIdentifier)
+        {
+            //the field identifier will have the property name and obect
+
+            //since we revalidating we need to remove the messages associated with the field
+            _validationMessageStore.Clear(fieldIdentifier);
+
+            //data annotation validation
+            DataAnnotationsValidator.Validate(fieldIdentifier, _validationMessageStore);
+
+            //custom validation
+            OnCustomValidation(fieldIdentifier, _validationMessageStore);
         }
 
         protected async Task ValidatePropertyAsync(FieldIdentifier fieldIdentifier)
