@@ -93,12 +93,45 @@ namespace Gizmo.UI.View.Services
             return _cache.TryGetValue(lookUpkey, out state);
         }
 
+        protected bool TryRemoveState(TLookUpkey lookUpkey)
+        {
+            _cacheAccessLock.Wait();
+            try
+            {
+                return _cache.Remove(lookUpkey);
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                _cacheAccessLock?.Release();
+            }
+        }
+
         /// <summary>
         /// Add the state to the cache.
         /// </summary>
         /// <param name="lookUpkey">Lookup key.</param>
         /// <param name="state">View state.</param>
-        protected void AddViewState(TLookUpkey lookUpkey, TViewState state) => _cache.Add(lookUpkey, state);
+        protected void AddOrUpdateViewState(TLookUpkey lookUpkey, TViewState state) 
+        {
+            _cacheAccessLock.Wait();
+            try
+            {
+                _cache.Remove(lookUpkey);
+                _cache.Add(lookUpkey, state);
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+                _cacheAccessLock.Release();
+            }
+        }
 
         /// <summary>
         /// Raises change event.
