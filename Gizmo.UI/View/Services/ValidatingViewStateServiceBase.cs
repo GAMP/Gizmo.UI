@@ -80,7 +80,7 @@ namespace Gizmo.UI.View.Services
             _editContext.NotifyValidationStateChanged();
         }
 
-        protected void ValidateProperty(Expression<Func<TViewState, object>> property)
+        protected void ValidateProperty(Expression<Func<TViewState, string?>> property)
         {
             MemberExpression body = (MemberExpression)property.Body;
             var propertyName = body.Member.Name;
@@ -212,5 +212,5 @@ namespace Gizmo.UI.View.Services
         }
 
         #endregion
-    }
+    }    
 }
