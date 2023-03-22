@@ -80,7 +80,7 @@ namespace Gizmo.UI.View.Services
             _editContext.NotifyValidationStateChanged();
         }
 
-        protected void ValidateProperty(Expression<Func<TViewState, string?>> property)
+        protected void ValidateProperty(Expression<Func<TViewState, object?>> property)
         {
             MemberExpression body = (MemberExpression)property.Body;
             var propertyName = body.Member.Name;
@@ -89,7 +89,7 @@ namespace Gizmo.UI.View.Services
             EditContext.NotifyValidationStateChanged();
         }
 
-        protected async Task ValidatePropertyAsync(Expression<Func<TViewState, string?>> property)
+        protected async Task ValidatePropertyAsync(Expression<Func<TViewState, object?>> property)
         {
             MemberExpression body = (MemberExpression)property.Body;
             var propertyName = body.Member.Name;
@@ -189,12 +189,12 @@ namespace Gizmo.UI.View.Services
 
         private void OnEditContextValidationStateChanged(object? sender, ValidationStateChangedEventArgs e)
         {
-            //here we could have an state object that would indicate that an async validation is currently running so it would help determine
-            //if the state is valid or not, just a example for now
-            _editContext.Properties.TryGetValue("IsAsyncValidationRunning", out object? value);
-
             using (ViewStateChangeDebounced())
             {
+                //here we could have an state object that would indicate that an async validation is currently running so it would help determine
+                //if the state is valid or not, just a example for now
+                _editContext.Properties.TryGetValue("IsAsyncValidationRunning", out object? value);
+            
                 ViewState.IsValid = !EditContext.GetValidationMessages().Any();
                 ViewState.IsDirty = EditContext.IsModified();
             }
