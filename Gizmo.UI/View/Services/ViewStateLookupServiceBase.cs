@@ -6,6 +6,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Gizmo.UI.View.Services
 {
+
+
     /// <summary>
     /// View state lookup service base.
     /// </summary>
@@ -32,7 +34,7 @@ namespace Gizmo.UI.View.Services
         /// Raised when managed view state collection changes, for example view state is added or removed.<br></br>
         /// <b>This event is not raised when individual view state changes.</b>
         /// </summary>
-        public event EventHandler<EventArgs>? Changed;
+        public event EventHandler<LookupViewStateChangeArgs>? Changed;
         #endregion
 
         #region METHODS
@@ -107,9 +109,9 @@ namespace Gizmo.UI.View.Services
         /// <summary>
         /// Raises change event.
         /// </summary>
-        protected void RaiseChanged()
+        protected void RaiseChanged(LookupViewStateChangeType type)
         {
-            Changed?.Invoke(this, EventArgs.Empty);
+            Changed?.Invoke(this, new LookupViewStateChangeArgs() { Type = type });
         }
 
         protected void DebounceViewStateChange(IViewState viewState)
@@ -137,8 +139,8 @@ namespace Gizmo.UI.View.Services
                 //initialize data
                 _dataInitialized = await DataInitializeAsync(cToken);
 
-                //view states/data was changed
-                RaiseChanged();
+                //view states/data was initialized
+                RaiseChanged(LookupViewStateChangeType.Initialized);
             }
             catch (Exception ex)
             {
