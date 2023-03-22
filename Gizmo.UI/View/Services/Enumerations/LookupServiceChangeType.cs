@@ -3,7 +3,7 @@
     /// <summary>
     /// Lookup view state change type.
     /// </summary>
-    public enum LookupViewStateChangeType
+    public enum LookupServiceChangeType
     {
         /// <summary>
         /// View states initialized.
