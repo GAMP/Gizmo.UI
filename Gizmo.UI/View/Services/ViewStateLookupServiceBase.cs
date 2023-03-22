@@ -28,10 +28,6 @@ namespace Gizmo.UI.View.Services
         private readonly SemaphoreSlim _initializeLock = new(1);
         private readonly Dictionary<TLookUpkey, TViewState> _cache = new();
         private bool _dataInitialized = false;
-        /// <summary>
-        /// Raised when managed view state collection changes, for example view state is added or removed.<br></br>
-        /// <b>This event is not raised when individual view state changes.</b>
-        /// </summary>
         public event EventHandler<LookupServiceChangeArgs>? Changed;
         #endregion
 
