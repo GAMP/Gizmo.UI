@@ -88,7 +88,16 @@ namespace Gizmo.UI.View.Services
             ValidateProperty(new FieldIdentifier(ViewState, propertyName));
             EditContext.NotifyValidationStateChanged();
         }
-        
+
+        protected async Task ValidatePropertyAsync(Expression<Func<TViewState, string?>> property)
+        {
+            MemberExpression body = (MemberExpression)property.Body;
+            var propertyName = body.Member.Name;
+
+            await ValidatePropertyAsync(new FieldIdentifier(ViewState, propertyName));
+            EditContext.NotifyValidationStateChanged();
+        }
+
         protected void ValidateProperty(FieldIdentifier fieldIdentifier)
         {
             //the field identifier will have the property name and obect
@@ -115,6 +124,7 @@ namespace Gizmo.UI.View.Services
 
             //custom validation
             OnCustomValidation(fieldIdentifier, _validationMessageStore);
+
             await OnCustomValidationAsync(fieldIdentifier, _validationMessageStore);
         }
 
@@ -183,13 +193,11 @@ namespace Gizmo.UI.View.Services
             //if the state is valid or not, just a example for now
             _editContext.Properties.TryGetValue("IsAsyncValidationRunning", out object? value);
 
-            using (ViewState.PropertyChangedLock())
+            using (ViewStateChangeDebounced())
             {
                 ViewState.IsValid = !EditContext.GetValidationMessages().Any();
                 ViewState.IsDirty = EditContext.IsModified();
             }
-
-            ViewStateChanged();
         }
 
         #endregion
