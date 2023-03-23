@@ -12,8 +12,8 @@ namespace Gizmo.UI.View.Services
     /// <typeparam name="TLookUpkey">Lookup key.</typeparam>
     /// <typeparam name="TViewState">View state type.</typeparam>
     public abstract class ViewStateLookupServiceBase<TLookUpkey, TViewState> : ViewServiceBase
-    where TLookUpkey : notnull
-    where TViewState : IViewState
+        where TLookUpkey : notnull
+        where TViewState : IViewState
     {
         #region CONSTRUCTOR
         protected ViewStateLookupServiceBase(ILogger logger, IServiceProvider serviceProvider) : base(logger, serviceProvider)
@@ -93,6 +93,11 @@ namespace Gizmo.UI.View.Services
             return _cache.TryGetValue(lookUpkey, out state);
         }
 
+        /// <summary>
+        /// Tries to remove views state from the cache.
+        /// </summary>
+        /// <param name="lookUpkey">View state key.</param>
+        /// <returns>True if found in cache and removed, otherwise false.</returns>
         protected bool TryRemoveState(TLookUpkey lookUpkey)
         {
             _cacheAccessLock.Wait();
@@ -115,7 +120,7 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         /// <param name="lookUpkey">Lookup key.</param>
         /// <param name="state">View state.</param>
-        protected void AddOrUpdateViewState(TLookUpkey lookUpkey, TViewState state) 
+        protected void AddOrUpdateViewState(TLookUpkey lookUpkey, TViewState state)
         {
             _cacheAccessLock.Wait();
             try
@@ -141,8 +146,16 @@ namespace Gizmo.UI.View.Services
             Changed?.Invoke(this, new LookupServiceChangeArgs() { Type = type });
         }
 
+        /// <summary>
+        /// Debounces view state change.
+        /// </summary>
+        /// <param name="viewState">View state.</param>
+        /// <exception cref="ArgumentNullException">thrown in case <paramref name="viewState"/>is equal to null.</exception>
         protected void DebounceViewStateChange(IViewState viewState)
         {
+            if (viewState == null)
+                throw new ArgumentNullException(nameof(viewState));
+
             _debounceService.Debounce(viewState);
         }
 

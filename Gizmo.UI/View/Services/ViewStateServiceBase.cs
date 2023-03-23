@@ -124,7 +124,7 @@ namespace Gizmo.UI.View.Services
         /// <summary>
         /// Raises view state change event on attached view state.
         /// </summary>
-        protected void ViewStateChanged()
+        protected void RaiseViewStateChanged()
         {
             ViewState.RaiseChanged();
         }
@@ -165,7 +165,7 @@ namespace Gizmo.UI.View.Services
         /// <returns>This function can be used when updating view state and raising state change on code block completion.</returns>
         protected DisposeCallback ViewStateChange()
         {
-            return new DisposeCallback(() => ViewStateChanged());
+            return new DisposeCallback(() => RaiseViewStateChanged());
         }
 
         /// <summary>
@@ -215,9 +215,7 @@ namespace Gizmo.UI.View.Services
         protected virtual Task OnNavigatedOut(NavigationParameters navigationParameters, CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
-        }
-
-     
+        }     
 
         #endregion
 
