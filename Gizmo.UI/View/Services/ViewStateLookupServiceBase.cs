@@ -116,16 +116,25 @@ public abstract class ViewStateLookupServiceBase<TLookUpkey, TViewState> : ViewS
     /// <returns> Task.</returns>
     protected async Task HandleChangesAsync(TLookUpkey key, LookupServiceChangeType modificationType, CancellationToken cToken = default)
     {
-        switch (modificationType)
+        try
         {
-            case LookupServiceChangeType.Modified:
-            case LookupServiceChangeType.Added:
-                var newState = await CreateViewStateAsync(key, cToken);
-                AddOrUpdateViewState(key, newState);
-                break;
-            case LookupServiceChangeType.Removed:
-                _cache.TryRemove(key, out _);
-                break;
+            switch (modificationType)
+            {
+                case LookupServiceChangeType.Modified:
+                case LookupServiceChangeType.Added:
+                    var newState = await CreateViewStateAsync(key, cToken);
+                    AddOrUpdateViewState(key, newState);
+                    break;
+                case LookupServiceChangeType.Removed:
+                    _cache.TryRemove(key, out _);
+                    break;
+            }
+
+            RaiseChanged(modificationType);
+        }
+        catch (Exception ex) 
+        {
+            Logger.LogError(ex, "Failed to handle change.");
         }
     }
 
@@ -138,7 +147,7 @@ public abstract class ViewStateLookupServiceBase<TLookUpkey, TViewState> : ViewS
         Changed?.Invoke(this, new() { Type = modificationType });
     #endregion
 
-    #region PRRIVATE FUNCTIONS
+    #region PRIVATE FUNCTIONS
     private async ValueTask EnsureDataInitialized(CancellationToken cToken)
     {
         if (dataInitialized)
@@ -146,7 +155,7 @@ public abstract class ViewStateLookupServiceBase<TLookUpkey, TViewState> : ViewS
 
         try
         {
-            //clar current cache
+            //clear current cache
             _cache.Clear();
 
             //initialize data
