@@ -1,6 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
-using Gizmo.Client;
 using Gizmo.UI.View.States;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -115,16 +114,16 @@ public abstract class ViewStateLookupServiceBase<TLookUpkey, TViewState> : ViewS
     /// <param name="modificationType">Type of changes.</param>
     /// <param name="cToken">Cancelation token.</param>
     /// <returns> Task.</returns>
-    protected async Task HandleChangesAsync(TLookUpkey key, ModificationType modificationType, CancellationToken cToken = default)
+    protected async Task HandleChangesAsync(TLookUpkey key, LookupServiceChangeType modificationType, CancellationToken cToken = default)
     {
         switch (modificationType)
         {
-            case ModificationType.Modified:
-            case ModificationType.Added:
+            case LookupServiceChangeType.Modified:
+            case LookupServiceChangeType.Added:
                 var newState = await CreateViewStateAsync(key, cToken);
                 AddOrUpdateViewState(key, newState);
                 break;
-            case ModificationType.Removed:
+            case LookupServiceChangeType.Removed:
                 _cache.TryRemove(key, out _);
                 break;
         }
@@ -135,8 +134,8 @@ public abstract class ViewStateLookupServiceBase<TLookUpkey, TViewState> : ViewS
     /// If the modification type is not defined, this will set the modified data type as Initialized.
     /// </summary>
     /// <param name="modificationType">Type of changes.</param>
-    protected void RaiseChanged(ModificationType? modificationType) =>
-        Changed?.Invoke(this, new() { Type = GetLookupChangeType(modificationType) });
+    protected void RaiseChanged(LookupServiceChangeType modificationType) =>
+        Changed?.Invoke(this, new() { Type = modificationType });
     #endregion
 
     #region PRRIVATE FUNCTIONS
@@ -154,7 +153,7 @@ public abstract class ViewStateLookupServiceBase<TLookUpkey, TViewState> : ViewS
             dataInitialized = await DataInitializeAsync(cToken);
 
             //view states/data was initialized
-            RaiseChanged(null);
+            RaiseChanged(LookupServiceChangeType.Initialized);
         }
         catch (Exception exception)
         {
@@ -162,14 +161,6 @@ public abstract class ViewStateLookupServiceBase<TLookUpkey, TViewState> : ViewS
             dataInitialized = false;
         }
     }
-    private static LookupServiceChangeType GetLookupChangeType(ModificationType? modificationType) =>
-        modificationType switch
-        {
-            ModificationType.Added => LookupServiceChangeType.Added,
-            ModificationType.Modified => LookupServiceChangeType.Modified,
-            ModificationType.Removed => LookupServiceChangeType.Removed,
-            _ => LookupServiceChangeType.Initialized
-        };
     #endregion
 
     #region ABSTRACT FUNCTIONS
