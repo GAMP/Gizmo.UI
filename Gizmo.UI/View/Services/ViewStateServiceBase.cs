@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.ComponentModel;
 using System.Reactive.Linq;
 using System.Reflection;
 using Gizmo.UI.Services;
@@ -143,7 +142,7 @@ namespace Gizmo.UI.View.Services
         /// <exception cref="ArgumentNullException">thrown in case <paramref name="viewState"/> is equal to null.</exception>
         protected void DebounceViewStateChanged(IViewState viewState)
         {
-            if(viewState == null)
+            if (viewState == null)
                 throw new ArgumentNullException(nameof(viewState));
 
             _debounceService.Debounce(viewState);
@@ -214,7 +213,7 @@ namespace Gizmo.UI.View.Services
         protected virtual Task OnNavigatedOut(NavigationParameters navigationParameters, CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
-        }     
+        }
 
         #endregion
 
