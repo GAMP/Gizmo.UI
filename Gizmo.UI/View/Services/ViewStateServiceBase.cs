@@ -111,10 +111,9 @@ namespace Gizmo.UI.View.Services
 
             isNavigatedIn = _associatedRoutes.Any(route => route.Template == uri.LocalPath);
 
-            while (!_navigatedRoutes.TryAdd(location, isNavigatedIn))
-                ;
+            var isFirstNavigation = _navigatedRoutes.TryAdd(location, isNavigatedIn);
 
-            return (true, isNavigatedIn);
+            return (isFirstNavigation, isNavigatedIn);
         }
 
         #endregion
