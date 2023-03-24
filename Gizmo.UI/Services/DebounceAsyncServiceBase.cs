@@ -1,15 +1,15 @@
 ﻿using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 
-namespace Net.Shared.Queues.WorkQueue;
+namespace Gizmo.UI.Services;
 /// <summary>
 ///  Asynchronously debounces in the concurrent queue.
 /// </summary>
 /// <remarks>Disposable.</remarks>
-public abstract class DebounceService<T> : IDisposable
+public abstract class DebounceAsyncServiceBase<T> : IDisposable
 {
     #region CONSTRUCTOR
-    protected DebounceService(ILogger logger) => Logger = logger;
+    protected DebounceAsyncServiceBase(ILogger logger) => Logger = logger;
     #endregion
 
     #region PRIVATE FIELDS
@@ -20,7 +20,7 @@ public abstract class DebounceService<T> : IDisposable
 
     #region PROPERTIES
     protected ILogger Logger { get; }
-    public int DebounceBufferTime { get; set; } = 1000; // 1 sec by default
+    public int DebounceBufferTime { get; set; } = 10000; // 1 sec by default
     #endregion
 
     #region PUBLIC FUNCTIONS
@@ -30,16 +30,21 @@ public abstract class DebounceService<T> : IDisposable
             {
                 await Task.Run(async () =>
                 {
+                    Console.WriteLine("Debounce...");
                     await ProcessItems();
 
                     _timer?.Dispose();
                     _timer = null;
+                    Console.WriteLine("Debounce complete.");
                 });
             }, null, DebounceBufferTime, Timeout.Infinite);
 
         var key = GetKey(item);
+        var value = new DebounceItem(item, cToken);
 
-        _items.AddOrUpdate(key, new DebounceItem(item, cToken), (k, v) => new DebounceItem(item, cToken));
+        _items.AddOrUpdate(key, value, (_, __) => value);
+
+        Console.WriteLine($"Debounce item {key} was added or updated");
     }
 
     public void Dispose() => _timer?.Dispose();
@@ -48,27 +53,25 @@ public abstract class DebounceService<T> : IDisposable
     #region PRIVATE FUNCTIONS
     private async Task ProcessItems()
     {
-        for (int i = 0; i < _items.Count; i++)
+        foreach (var element in _items)
         {
-            var item = _items.ElementAt(i);
+            Console.WriteLine($"Debounce processing item {element.Key}");
 
-            if (item.Value.CancelationToken.IsCancellationRequested)
+            if (_items.TryRemove(element.Key, out var value))
             {
-                _items.TryRemove(item.Key, out _);
-                continue;
-            }
+                if (value.CancelationToken.IsCancellationRequested)
+                    continue;
 
-            try
-            {
-                await OnDebounce(item.Value.Item, item.Value.CancelationToken);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Error while processing queue item.");
-            }
-            finally
-            {
-                _items.TryRemove(item.Key, out _);
+                try
+                {
+                    await OnDebounce(value.Item, value.CancelationToken);
+
+                    Console.WriteLine($"Debounce processed item {element.Key}");
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, $"Error while debounce processing item {element.Key}.");
+                }
             }
         }
     }
