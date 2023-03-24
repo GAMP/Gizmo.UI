@@ -138,37 +138,6 @@ namespace Gizmo.UI.View.Services
         }
 
         /// <summary>
-        /// Debounces view state change for specified view state.
-        /// </summary>
-        /// <param name="viewState">View state.</param>
-        /// <exception cref="ArgumentNullException">thrown in case <paramref name="viewState"/> is equal to null.</exception>
-        protected void DebounceViewStateChanged(IViewState viewState)
-        {
-            if (viewState == null)
-                throw new ArgumentNullException(nameof(viewState));
-
-            _debounceService.Debounce(viewState);
-        }
-
-        /// <summary>
-        /// Debounces view state change.
-        /// </summary>
-        /// <returns>This function can be used when updating view state and debouncing state change on code block completion.</returns>
-        protected DisposeCallback ViewStateChangeDebounced()
-        {
-            return new DisposeCallback(() => DebounceViewStateChanged());
-        }
-
-        /// <summary>
-        /// Raises view state change.
-        /// </summary>
-        /// <returns>This function can be used when updating view state and raising state change on code block completion.</returns>
-        protected DisposeCallback ViewStateChange()
-        {
-            return new DisposeCallback(() => RaiseViewStateChanged());
-        }
-
-        /// <summary>
         /// Gets view state.
         /// </summary>
         /// <typeparam name="T">View state type.</typeparam>

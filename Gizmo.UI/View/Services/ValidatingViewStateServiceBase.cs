@@ -40,7 +40,7 @@ namespace Gizmo.UI.View.Services
         #endregion
 
         #region PROTECTED FUNCTIONS
-        
+
         /// <summary>
         /// Resets current validation state.
         /// The method will do the following operation.<br></br>
@@ -189,15 +189,14 @@ namespace Gizmo.UI.View.Services
 
         private void OnEditContextValidationStateChanged(object? sender, ValidationStateChangedEventArgs e)
         {
-            using (ViewStateChangeDebounced())
-            {
-                //here we could have an state object that would indicate that an async validation is currently running so it would help determine
-                //if the state is valid or not, just a example for now
-                _editContext.Properties.TryGetValue("IsAsyncValidationRunning", out object? value);
-            
-                ViewState.IsValid = !EditContext.GetValidationMessages().Any();
-                ViewState.IsDirty = EditContext.IsModified();
-            }
+            //here we could have an state object that would indicate that an async validation is currently running so it would help determine
+            //if the state is valid or not, just a example for now
+            _editContext.Properties.TryGetValue("IsAsyncValidationRunning", out object? value);
+
+            ViewState.IsValid = !EditContext.GetValidationMessages().Any();
+            ViewState.IsDirty = EditContext.IsModified();
+
+            DebounceViewStateChanged();
         }
 
         #endregion
@@ -220,5 +219,5 @@ namespace Gizmo.UI.View.Services
         }
 
         #endregion
-    }    
+    }
 }
