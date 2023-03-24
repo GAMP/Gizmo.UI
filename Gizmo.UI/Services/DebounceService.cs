@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
 
 namespace Net.Shared.Queues.WorkQueue;
 /// <summary>
@@ -8,60 +9,66 @@ namespace Net.Shared.Queues.WorkQueue;
 public abstract class DebounceService<T> : IDisposable
 {
     #region CONSTRUCTOR
-    public DebounceService()
-    {
-        _queueItems = new();
-        Task.Run(ProcessQueueItems);
-    }
-    public DebounceService(int itemsCount)
-    {
-        _queueItems = new(itemsCount);
-        Task.Run(ProcessQueueItems);
-    }
+    protected DebounceService(ILogger logger) => Logger = logger;
     #endregion
 
     #region PRIVATE FIELDS
-    private record WorkQueueItem(T Item, CancellationToken CancelationToken, TaskCompletionSource TaskCompletionSource);
-    private readonly BlockingCollection<WorkQueueItem> _queueItems;
+    private record DebounceItem(T Item, CancellationToken CancelationToken);
+    private readonly ConcurrentDictionary<object, DebounceItem> _items = new();
+    Timer? _timer;
     #endregion
 
     #region PROPERTIES
+    protected ILogger Logger { get; }
     public int DebounceBufferTime { get; set; } = 1000; // 1 sec by default
     #endregion
 
     #region PUBLIC FUNCTIONS
-    public Task Debounce(T item, CancellationToken cToken = default)
+    public void Debounce(T item, CancellationToken cToken = default)
     {
-        TaskCompletionSource tcs = new();
+        _timer ??= new Timer(async _ =>
+            {
+                await Task.Run(async () =>
+                {
+                    await ProcessItems();
 
-        return _queueItems.TryAdd(new(item, cToken, tcs))
-            ? tcs.Task
-            : Task.CompletedTask;
+                    _timer?.Dispose();
+                    _timer = null;
+                });
+            }, null, DebounceBufferTime, Timeout.Infinite);
+
+        var key = GetKey(item);
+
+        _items.AddOrUpdate(key, new DebounceItem(item, cToken), (k, v) => new DebounceItem(item, cToken));
     }
 
-    public void Dispose() => _queueItems.Dispose();
+    public void Dispose() => _timer?.Dispose();
     #endregion
 
     #region PRIVATE FUNCTIONS
-    private async Task ProcessQueueItems()
+    private async Task ProcessItems()
     {
-        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(DebounceBufferTime));
-
-        foreach (var queueItem in _queueItems.GetConsumingEnumerable())
+        for (int i = 0; i < _items.Count; i++)
         {
+            var item = _items.ElementAt(i);
+
+            if (item.Value.CancelationToken.IsCancellationRequested)
+            {
+                _items.TryRemove(item.Key, out _);
+                continue;
+            }
+
             try
             {
-                do
-                {
-
-                } while (await timer.WaitForNextTickAsync(queueItem.CancelationToken));
-
-                await OnDebounce(queueItem.Item, queueItem.CancelationToken);
-                queueItem.TaskCompletionSource.SetResult();
+                await OnDebounce(item.Value.Item, item.Value.CancelationToken);
             }
-            catch (Exception exeption)
+            catch (Exception ex)
             {
-                queueItem.TaskCompletionSource.SetException(exeption);
+                Logger.LogError(ex, "Error while processing queue item.");
+            }
+            finally
+            {
+                _items.TryRemove(item.Key, out _);
             }
         }
     }
@@ -69,5 +76,6 @@ public abstract class DebounceService<T> : IDisposable
 
     #region ABSTRACT FUNCTIONS
     public abstract Task OnDebounce(T item, CancellationToken cToken = default);
+    public abstract object GetKey(T item);
     #endregion
 }
