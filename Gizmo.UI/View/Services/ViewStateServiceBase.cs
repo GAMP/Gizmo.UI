@@ -60,7 +60,7 @@ namespace Gizmo.UI.View.Services
         private CancellationTokenSource? _navigatedInCancellationSource;
         private CancellationTokenSource? _navigatedOutCancellationSource;
 
-        private async void OnLocationChangedInternal(object? _, LocationChangedEventArgs args)
+        private async void OnLocationChangedInternal(object? sender, LocationChangedEventArgs args)
         {
             var (isFirstNavigation, isNavigatedIn) = GeLocationChangedInternalState(args.Location);
 
@@ -73,7 +73,14 @@ namespace Gizmo.UI.View.Services
 
                 _navigatedInCancellationSource = new();
 
-                await OnNavigatedIn(new(isFirstNavigation, args.IsNavigationIntercepted), _navigatedInCancellationSource.Token);
+                try
+                {
+                    await OnNavigatedIn(new(isFirstNavigation, args.IsNavigationIntercepted), _navigatedInCancellationSource.Token);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "Error while handling navigated in event.");
+                }
             }
             else
             {
@@ -86,10 +93,24 @@ namespace Gizmo.UI.View.Services
 
                 _navigatedOutCancellationSource = new();
 
-                await OnNavigatedOut(new(false, args.IsNavigationIntercepted), _navigatedOutCancellationSource.Token);
+                try
+                {
+                    await OnNavigatedOut(new(false, args.IsNavigationIntercepted), _navigatedOutCancellationSource.Token);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "Error while handling navigated out event.");
+                }
             }
 
-            OnLocationChanged(_, args);
+            try
+            {
+                await OnLocationChanged(sender, args);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error while handling location changed event.");
+            }
         }
 
         /// <summary>
@@ -105,9 +126,8 @@ namespace Gizmo.UI.View.Services
             if (_navigatedRoutes.TryGetValue(location, out var isNavigatedIn))
                 return (false, isNavigatedIn);
 
-            if (!Uri.TryCreate(location, UriKind.Absolute, out var uri))
-                throw new ArgumentException("Route is not valid", location);
-
+            var uri = new Uri(location, UriKind.Absolute);
+            
             isNavigatedIn = _associatedRoutes.Any(route => route.Template == uri.LocalPath);
 
             var isFirstNavigation = _navigatedRoutes.TryAdd(location, isNavigatedIn);
@@ -197,8 +217,9 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         /// <param name="sender">Sender.</param>
         /// <param name="e">Location change parameters.</param>
-        protected virtual void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+        protected virtual Task OnLocationChanged(object? sender, LocationChangedEventArgs e)
         {
+            return Task.CompletedTask;
         }
 
         /// <summary>
