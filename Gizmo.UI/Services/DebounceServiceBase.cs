@@ -21,11 +21,9 @@ public abstract class DebounceServiceBase<T> : IDisposable
     #endregion
 
     #region FIELDS
-
     private readonly Subject<T> _subject = new();
     private IDisposable? _subscription;
     private int _debounceBufferTime = 1000; // 1 sec by default
-
     #endregion
 
     #region PROPERTIES
@@ -54,7 +52,11 @@ public abstract class DebounceServiceBase<T> : IDisposable
     #endregion
 
     #region PUBLIC FUNCTIONS
-
+    /// <summary>
+    /// Debounces the data.
+    /// </summary>
+    /// <param name="item">Item to debounce.</param>
+    /// <exception cref="ArgumentNullException">thrown in case <paramref name="item"/>is equal to null.</exception>
     public void Debounce(T item)
     {
         if (item is null)
@@ -62,7 +64,9 @@ public abstract class DebounceServiceBase<T> : IDisposable
 
         _subject.OnNext(item);
     }
-
+    /// <summary>
+    /// Disposes the object.
+    /// </summary>
     public void Dispose()
     {
         _subject?.Dispose();
@@ -72,7 +76,6 @@ public abstract class DebounceServiceBase<T> : IDisposable
     #endregion
 
     #region PRIVATE FUNCTIONS
-
     private void DebounceSubscribe()
     {
         // The debounce action
@@ -99,8 +102,10 @@ public abstract class DebounceServiceBase<T> : IDisposable
     #endregion
 
     #region ABSTRACT FUNCTIONS
-
+    /// <summary>
+    /// Called when debounce is triggered.
+    /// </summary>
+    /// <param name="item">Item to debounce.</param>
     protected abstract void OnDebounce(T item);
-
     #endregion
 }

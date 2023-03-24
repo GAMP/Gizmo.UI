@@ -128,8 +128,10 @@ namespace Gizmo.UI.View.Services
         }
 
         /// <summary>
-        /// Debounces view state change.
+        /// Debounces view state change for current view state.
         /// </summary>
+        /// <param name="viewState">View state.</param>
+        /// <exception cref="ArgumentNullException">thrown in case <paramref name="viewState"/> is equal to null.</exception>
         protected void DebounceViewStateChanged()
         {
             _debounceService.Debounce(ViewState);
