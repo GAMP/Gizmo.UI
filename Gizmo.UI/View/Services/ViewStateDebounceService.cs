@@ -12,7 +12,6 @@ public sealed class ViewStateDebounceService : DebounceAsyncServiceBase<IViewSta
     {
     }
 
-    public async void Debounce(IViewState item) => base.Debounce(item);
     public override object GetKey(IViewState item) => item.GetHashCode();
 
     public override Task OnDebounce(IViewState item, CancellationToken cToken = default)

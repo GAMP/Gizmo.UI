@@ -20,7 +20,7 @@ public abstract class DebounceAsyncServiceBase<T> : IDisposable
 
     #region PROPERTIES
     protected ILogger Logger { get; }
-    public int DebounceBufferTime { get; set; } = 10000; // 1 sec by default
+    public int DebounceBufferTime { get; set; } = 5000; // 1 sec by default
     #endregion
 
     #region PUBLIC FUNCTIONS
