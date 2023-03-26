@@ -23,7 +23,7 @@ namespace Gizmo.UI.View.Services
             //add current async validations to the edit context properties
             //we could just use the field as is BUT it might be usefull to have this value shared since some custom components can make use of it
             //for example some custom component could check this value when EditContext validation state changes
-            //and provide some visual feedback if any async validation is still running
+            //and provide some visual feedback if any async validation is still running for one or multiple fields
             _editContext.Properties[CURRENT_ASYNC_VALIDATING_PROPERTIES] = _asyncValidatingProperties;
 
             _validationMessageStore = new ValidationMessageStore(_editContext);
@@ -37,7 +37,7 @@ namespace Gizmo.UI.View.Services
 
         private const string CURRENT_ASYNC_VALIDATING_PROPERTIES = "CurrentAsyncValidations";
         private readonly HashSet<FieldIdentifier> _asyncValidatedProperties = new(); //use hashset so same field does not appear more than once
-        private readonly HashSet<FieldIdentifier> _asyncValidatingProperties = new();
+        private readonly HashSet<FieldIdentifier> _asyncValidatingProperties = new(); //use hashset so same field does not appear more than once
 
         #region PROPERTIES
 
@@ -208,6 +208,7 @@ namespace Gizmo.UI.View.Services
                 //validation would already fail in previous step, in a scneario where we might allow the value to be null then we probably dont even need to trigger
                 //async validation thus the property would be valid
 
+                //TODO : This behaviour might need to be considered more carefully
                 //check the validation trigger 
                 if (trigger == ValidationTrigger.Input && validationAttribute.IsAsync)
                 {
@@ -321,6 +322,18 @@ namespace Gizmo.UI.View.Services
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Runs validation.
+        /// </summary>
+        /// <remarks>
+        /// Use this method instead of <see cref="EditContext.Validate"/> as this method will not return true or false and 
+        /// we need to use <see cref="TViewState.IsValid"/> to check for validity instead.
+        /// </remarks>
+        protected void Validate()
+        {
+            EditContext.Validate();
         }
 
         #region OBSOLETE
