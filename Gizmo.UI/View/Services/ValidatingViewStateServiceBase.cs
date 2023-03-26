@@ -203,8 +203,7 @@ namespace Gizmo.UI.View.Services
             //in general we wont need to trigger async validation until those errors resolved
             if (!_validationMessageStore[fieldIdentifier].Any())
             {
-                //consider a scenario
-                //we have a username property that needs to be validated asynchronosly, usually this property will have required attribute
+                //consider a scenario where we have a username property that needs to be validated asynchronosly, usually this property will have required attribute
                 //along with some other validation attributes, if validation was triggered by Validate method initialy and there where no input from the user
                 //validation would already fail in previous step, in a scneario where we might allow the value to be null then we probably dont even need to trigger
                 //async validation thus the property would be valid
@@ -213,7 +212,7 @@ namespace Gizmo.UI.View.Services
                 if (trigger == ValidationTrigger.Input && validationAttribute.IsAsync)
                 {
                     //schedule async validation
-                    RunAsyncValidation(fieldIdentifier, notifyValidationStateChanged);
+                    RunAsyncValidation(fieldIdentifier, trigger, notifyValidationStateChanged);
                 }
             }
 
@@ -226,8 +225,9 @@ namespace Gizmo.UI.View.Services
         /// Schedules and runs async validation.
         /// </summary>
         /// <param name="fieldIdentifier">Field identifier.</param>
+        /// <param name="validationTrigger">Trigger.</param>
         /// <param name="notifyValidationStateChanged">Indicates if <see cref="EditContext.NotifyValidationStateChanged"/> should be called once async validation is scheduled.</param>
-        private void RunAsyncValidation(FieldIdentifier fieldIdentifier, bool notifyValidationStateChanged = true)
+        private void RunAsyncValidation(FieldIdentifier fieldIdentifier, ValidationTrigger validationTrigger, bool notifyValidationStateChanged = true)
         {
             //previous validation is no longer valid, remove it from validated list
             _asyncValidatedProperties.Remove(fieldIdentifier);
@@ -375,12 +375,6 @@ namespace Gizmo.UI.View.Services
             await OnCustomValidationAsync(fieldIdentifier, _validationMessageStore);
         }
 
-        #endregion
-
-        #endregion
-
-        #region PROTECTED VIRTUAL
-
         protected virtual void OnCustomValidation(FieldIdentifier fieldIdentifier, ValidationMessageStore validationMessageStore)
         {
         }
@@ -389,6 +383,12 @@ namespace Gizmo.UI.View.Services
         {
             return Task.CompletedTask;
         }
+
+        #endregion
+
+        #endregion
+
+        #region PROTECTED VIRTUAL
 
         /// <summary>
         /// Does custom validation.
@@ -404,17 +404,18 @@ namespace Gizmo.UI.View.Services
         }
 
         /// <summary>
-        /// Runs async validation.<br></br>
+        /// Does custom async validation.<br></br>
         /// <b>This function should not be called directly.</b>
         /// </summary>
         /// <param name="fieldIdentifier">Field identifier.</param>
+        /// <param name="validationTrigger">Trigger.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <remarks>
         /// This function will run for any property that have <see cref="ValidatingPropertyAttribute.IsAsync"/> set.<br></br>
         /// This function will run after all data annotation validation rules have passed and will not be executed if any erros are found.<br></br>
         /// This function is only responsible validating the field specified <paramref name="fieldIdentifier"/> and adding any associated errors with <see cref="AddError"/> method.
         /// </remarks>
-        protected virtual Task OnValidateAsync(FieldIdentifier fieldIdentifier, CancellationToken cancellationToken =default)
+        protected virtual Task OnValidateAsync(FieldIdentifier fieldIdentifier, ValidationTrigger validationTrigger, CancellationToken cancellationToken =default)
         {  
             //do custom async validation here
             return Task.CompletedTask;
