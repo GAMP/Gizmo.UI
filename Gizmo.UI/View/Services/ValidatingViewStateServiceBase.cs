@@ -57,7 +57,7 @@ namespace Gizmo.UI.View.Services
         /// Resets current validation state.
         /// The method will do the following operation.<br></br>
         /// * Clear validation error message store.<br></br>
-        /// * Clear any async validations from _asyncValidatedProperties.
+        /// * Clear any async validations from _asyncValidatedProperties.<br></br>
         /// * Mark edit context as unmodified.<br></br>
         /// * Call <see cref="EditContext.NotifyValidationStateChanged"/> function on current edit context.<br></br>        
         /// </summary>
@@ -302,7 +302,7 @@ namespace Gizmo.UI.View.Services
         /// Checks if all async validated properties have been validated.
         /// </summary>
         /// <returns>True or false.</returns>
-        protected bool AllAsyncPropertiesValidated()
+        protected bool IsAsyncPropertiesValidated()
         {
             //TODO : Not the most optimal way
             var instanceInfo = ValidationInfo.Get(ViewState);
@@ -475,7 +475,7 @@ namespace Gizmo.UI.View.Services
         /// </remarks>
         private void OnEditContextValidationStateChanged(object? sender, ValidationStateChangedEventArgs e)
         {
-            if (!AllAsyncPropertiesValidated())
+            if (!IsAsyncPropertiesValidated())
             {
                 //if not all async validations have completed then the state is invalid
                 ViewState.IsValid = false;
