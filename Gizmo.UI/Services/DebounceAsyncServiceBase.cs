@@ -13,72 +13,80 @@ public abstract class DebounceAsyncServiceBase<T> : IDisposable
     #endregion
 
     #region PRIVATE FIELDS
+    Timer? _timer;
+    private int _debounceBufferTime = 1000; // 1 sec by default
     private record DebounceItem(T Item, CancellationToken CancelationToken);
     private readonly ConcurrentDictionary<object, DebounceItem> _items = new();
-    Timer? _timer;
     #endregion
 
     #region PROPERTIES
     protected ILogger Logger { get; }
-    public int DebounceBufferTime { get; set; } = 5000; // 1 sec by default
+    public int DebounceBufferTime
+    {
+        get { return _debounceBufferTime; }
+        set
+        {
+            if (value <= 0)
+                throw new ArgumentOutOfRangeException(nameof(DebounceBufferTime));
+
+            _debounceBufferTime = value;
+
+            //reschedule timer
+            _timer ??= new Timer(GetTimerCallback(), null, _debounceBufferTime, Timeout.Infinite);
+        }
+    }
     #endregion
 
     #region PUBLIC FUNCTIONS
     public void Debounce(T item, CancellationToken cToken = default)
     {
-        _timer ??= new Timer(async _ =>
-            {
-                await Task.Run(async () =>
-                {
-                    Console.WriteLine("Debounce...");
-                    await ProcessItems();
-
-                    _timer?.Dispose();
-                    _timer = null;
-                    Console.WriteLine("Debounce complete.");
-                });
-            }, null, DebounceBufferTime, Timeout.Infinite);
+        _timer ??= new Timer(GetTimerCallback(), null, _debounceBufferTime, Timeout.Infinite);
 
         var key = GetKey(item);
         var value = new DebounceItem(item, cToken);
 
         _items.AddOrUpdate(key, value, (_, __) => value);
-
-        Console.WriteLine($"Debounce item {key} was added or updated");
     }
 
     public void Dispose() => _timer?.Dispose();
     #endregion
 
     #region PRIVATE FUNCTIONS
+    private TimerCallback GetTimerCallback() => async _ => await Task.Run(async () =>
+        {
+            await ProcessItems();
+
+            _timer?.Dispose();
+            _timer = null;
+        });
     private async Task ProcessItems()
     {
+        List<Task> tasks = new(_items.Count);
+
         foreach (var element in _items)
         {
-            Console.WriteLine($"Debounce processing item {element.Key}");
-
-            if (_items.TryRemove(element.Key, out var value))
+            if (_items.TryRemove(element.Key, out _))
             {
-                if (value.CancelationToken.IsCancellationRequested)
+                if (element.Value.CancelationToken.IsCancellationRequested)
+                {
+                    Logger.LogWarning("Debounce processing item {0} was cancelled.", element.Key);
                     continue;
-
-                try
-                {
-                    await OnDebounce(value.Item, value.CancelationToken);
-
-                    Console.WriteLine($"Debounce processed item {element.Key}");
                 }
-                catch (Exception ex)
-                {
-                    Logger.LogError(ex, $"Error while debounce processing item {element.Key}.");
-                }
+
+                tasks.Add(Task.Run(() => OnDebounce(element.Value.Item, element.Value.CancelationToken)));
             }
         }
+
+        await Task.WhenAll(tasks).ContinueWith(task =>
+        {
+            if (task.IsFaulted)
+                Logger.LogError(task.Exception, "Debounce processing tasks of the items were failed.");
+        });
     }
     #endregion
 
     #region ABSTRACT FUNCTIONS
-    public abstract Task OnDebounce(T item, CancellationToken cToken = default);
-    public abstract object GetKey(T item);
+    protected abstract Task OnDebounce(T item, CancellationToken cToken);
+    protected abstract object GetKey(T item);
     #endregion
 }

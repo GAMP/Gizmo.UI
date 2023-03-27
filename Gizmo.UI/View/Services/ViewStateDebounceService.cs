@@ -6,18 +6,21 @@ using Microsoft.Extensions.Logging;
 namespace Gizmo.UI.View.Services;
 
 /// <inheritdoc/>
-public sealed class ViewStateDebounceService : DebounceAsyncServiceBase<IViewState>
+public sealed class ViewStateDebounceService : DebounceServiceBase<IViewState>
 {
     public ViewStateDebounceService(ILogger<ViewStateDebounceService> logger) : base(logger)
     {
     }
 
-    public override object GetKey(IViewState item) => item.GetHashCode();
+    protected override void OnDebounce(IViewState item) => item.RaiseChanged();
 
-    public override Task OnDebounce(IViewState item, CancellationToken cToken = default)
-    {
-        item.RaiseChanged();
-        Console.WriteLine($"Debounce item {item.GetHashCode()} was changed.");
-        return Task.CompletedTask;
-    }
+    //for asyn debounce
+
+    // protected override object GetKey(IViewState item) => item.GetHashCode();
+
+    // protected override Task OnDebounce(IViewState item, CancellationToken cToken = default)
+    // {
+    //     item.RaiseChanged();
+    //     return Task.CompletedTask;
+    // }
 }
