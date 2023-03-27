@@ -1,11 +1,11 @@
-﻿using Gizmo.UI.View.States;
-using Microsoft.AspNetCore.Components.Forms;
-using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reflection;
+using Gizmo.UI.View.States;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.Extensions.Logging;
 
 namespace Gizmo.UI.View.Services
 {
@@ -207,7 +207,6 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         /// <param name="fieldIdentifier">Field identifier.</param>
         /// <param name="trigger">Trigger.</param>
-        /// <param name="notifyFieldChanged">Indicates if <see cref="EditContext.NotifyFieldChanged"/> should be called.</param>
         protected void ValidateProperty(FieldIdentifier fieldIdentifier, ValidationTrigger trigger = ValidationTrigger.Input, bool notifyValidationStateChanged = true)
         {
             //get validation attribute
@@ -245,7 +244,7 @@ namespace Gizmo.UI.View.Services
                 if (validationAttribute.IsAsync && trigger == ValidationTrigger.Input)
                 {
                     //schedule async validation
-                    RunAsyncValidation(fieldIdentifier, trigger, false);
+                    RunAsyncValidation(fieldIdentifier, false);
                 }
             }
 
@@ -258,9 +257,8 @@ namespace Gizmo.UI.View.Services
         /// Schedules and runs async validation.
         /// </summary>
         /// <param name="fieldIdentifier">Field identifier.</param>
-        /// <param name="validationTrigger">Trigger.</param>
         /// <param name="notifyValidationStateChanged">Indicates if <see cref="EditContext.NotifyValidationStateChanged"/> should be called once async validation is scheduled.</param>
-        private void RunAsyncValidation(FieldIdentifier fieldIdentifier, ValidationTrigger validationTrigger, bool notifyValidationStateChanged = true)
+        private void RunAsyncValidation(FieldIdentifier fieldIdentifier, bool notifyValidationStateChanged = true)
         {
             //should not be null if there are async properties but just in case lets check
             if (_asyncFieldValidationObservable == null)
@@ -528,10 +526,9 @@ namespace Gizmo.UI.View.Services
                 Increment(field);
 
                 //get cancellation token associated with field and remove it from dictionary
-                if (_cancellations.Remove(field, out var previousCancellationToken))
+                if (_cancellations.Remove(field, out var previousCancellationToken) && !previousCancellationToken.IsCancellationRequested)
                 {
-                    if (!previousCancellationToken.IsCancellationRequested)
-                        previousCancellationToken.Cancel();
+                    previousCancellationToken.Cancel();
                 }
 
                 //create new cancellation token source
@@ -552,7 +549,7 @@ namespace Gizmo.UI.View.Services
                             if (t.IsCompletedSuccessfully)
                             {
                                 //add the results in case no cancellation occured
-                                if (cts.IsCancellationRequested == false)
+                                if (!cts.IsCancellationRequested)
                                 {
                                     foreach (var error in t.Result)
                                         AddError(field, error, false);

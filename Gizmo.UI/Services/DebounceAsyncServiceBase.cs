@@ -5,6 +5,7 @@ namespace Gizmo.UI.Services;
 /// <summary>
 ///  Asynchronously debounces in the concurrent queue.
 /// </summary>
+/// <typeparam name="T">Debounce item type.</typeparam>
 /// <remarks>Disposable.</remarks>
 public abstract class DebounceAsyncServiceBase<T> : IDisposable
 {
