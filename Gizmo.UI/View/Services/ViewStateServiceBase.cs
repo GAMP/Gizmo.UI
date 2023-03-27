@@ -127,7 +127,7 @@ namespace Gizmo.UI.View.Services
                 return (false, isNavigatedIn);
 
             var uri = new Uri(location, UriKind.Absolute);
-            
+
             isNavigatedIn = _associatedRoutes.Any(route => route.Template == uri.LocalPath);
 
             var isFirstNavigation = _navigatedRoutes.TryAdd(location, isNavigatedIn);
@@ -155,6 +155,10 @@ namespace Gizmo.UI.View.Services
         protected void DebounceViewStateChanged()
         {
             _debounceService.Debounce(ViewState);
+        }
+        protected void DebounceViewStateChanged(TViewState viewState)
+        {
+            _debounceService.Debounce(viewState);
         }
 
         /// <summary>
