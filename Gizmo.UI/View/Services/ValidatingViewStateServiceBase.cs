@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -37,15 +36,13 @@ namespace Gizmo.UI.View.Services
         private readonly EditContext _editContext;
         private readonly ValidationMessageStore _validationMessageStore;
         private readonly HashSet<FieldIdentifier> _asyncValidatedProperties = new(); //use hashset so same field does not appear more than once
-        private readonly HashSet<FieldIdentifier> _asyncValidatingProperties = new(); //use hashset so same field does not appear more than once
-
+        private readonly ConcurrentDictionary<FieldIdentifier, CountRef> _asyncValidatingProperties = new();
+        private readonly ConcurrentDictionary<FieldIdentifier, CancellationTokenSource> _cancellations = new();
         #endregion
 
         private const string CURRENT_ASYNC_VALIDATING_PROPERTIES = "CurrentAsyncValidations";
-        private readonly ConcurrentDictionary<FieldIdentifier, CancellationTokenSource> _cancellations = new();
         private Subject<FieldIdentifier> _asyncFieldValidationObservable;
-        private IDisposable? _asyncValidationSubscription;
-
+        private IDisposable? _asyncFieldValidationSubscription;
 
         #region PROPERTIES
 
@@ -55,6 +52,34 @@ namespace Gizmo.UI.View.Services
         public EditContext EditContext
         {
             get { return _editContext; }
+        }
+
+        /// <summary>
+        /// Checks if current view state have async validating properties.
+        /// </summary>
+        protected bool HaveAsyncValidatingProperties
+        {
+            get
+            {
+                //TODO : Not the most optimal way
+                var instanceInfo = ValidationInfo.Get(ViewState);
+
+                foreach (var info in instanceInfo)
+                {
+                    if (info.Instance == null)
+                        continue;
+
+                    foreach (var property in info.Properties)
+                    {
+                        var validateAttribute = property.GetCustomAttribute<ValidatingPropertyAttribute>();
+
+                        if (validateAttribute?.IsAsync == true)
+                            return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         #endregion
@@ -163,7 +188,7 @@ namespace Gizmo.UI.View.Services
         /// <returns>True or false.</returns>
         protected bool IsAsyncValidating(FieldIdentifier fieldIdentifier)
         {
-            return _asyncValidatingProperties.Contains(fieldIdentifier);
+            return Compare(fieldIdentifier);
         }
 
         /// <summary>
@@ -217,10 +242,10 @@ namespace Gizmo.UI.View.Services
 
                 //TODO : This behaviour might need to be considered more carefully
                 //check the validation trigger 
-                if (trigger == ValidationTrigger.Input && validationAttribute.IsAsync)
+                if (validationAttribute.IsAsync && trigger == ValidationTrigger.Input)
                 {
                     //schedule async validation
-                    RunAsyncValidation(fieldIdentifier, trigger, notifyValidationStateChanged);
+                    RunAsyncValidation(fieldIdentifier, trigger, false);
                 }
             }
 
@@ -244,18 +269,8 @@ namespace Gizmo.UI.View.Services
             //previous validation is no longer valid, remove it from validated list
             _asyncValidatedProperties.Remove(fieldIdentifier);
 
-            //create async validation and modify edit context properties
-
-            try
-            {
-                _asyncValidatingProperties.Add(fieldIdentifier);
-                _asyncFieldValidationObservable.OnNext(fieldIdentifier);
-            }
-            catch
-            {
-                //remove field identifier if we failed to schedule
-                _asyncValidatingProperties.Remove(fieldIdentifier);
-            }
+            //create async validation and modify edit context properties           
+            _asyncFieldValidationObservable.OnNext(fieldIdentifier);
 
             //notify change if required
             if (notifyValidationStateChanged)
@@ -332,31 +347,18 @@ namespace Gizmo.UI.View.Services
         }
 
         /// <summary>
-        /// Checks if current view state have async validating properties.
+        /// Checks if there are any async validations running.
         /// </summary>
-        protected bool HaveAsyncValidatingProperties
+        /// <returns>True or false.</returns>
+        protected bool IsAsyncValidationsRunning()
         {
-            get
+            foreach (var keyValue in _asyncValidatingProperties)
             {
-                //TODO : Not the most optimal way
-                var instanceInfo = ValidationInfo.Get(ViewState);
-
-                foreach (var info in instanceInfo)
-                {
-                    if (info.Instance == null)
-                        continue;
-
-                    foreach (var property in info.Properties)
-                    {
-                        var validateAttribute = property.GetCustomAttribute<ValidatingPropertyAttribute>();
-
-                        if (validateAttribute?.IsAsync == true)
-                            return true;
-                    }
-                }
-
-                return false;
+                if (Compare(keyValue.Key))
+                    return true;
             }
+
+            return false;
         }
 
         /// <summary>
@@ -448,13 +450,7 @@ namespace Gizmo.UI.View.Services
         /// </remarks>
         private void OnEditContextValidationStateChanged(object? sender, ValidationStateChangedEventArgs e)
         {
-            if (!IsAsyncPropertiesValidated())
-            {
-                //if not all async validations have completed then the state is invalid
-                ViewState.IsValid = false;
-            }
-            //check if any async validations are still running
-            else if (_asyncValidatingProperties.Count > 0)
+            if (IsAsyncValidationsRunning())
             {
                 //if async validations are running mark as isvalidating
                 ViewState.IsValidating = true;
@@ -466,7 +462,15 @@ namespace Gizmo.UI.View.Services
             {
                 //clear is validating if no async validations are running
                 ViewState.IsValidating = false;
+            }
 
+            if (!IsAsyncPropertiesValidated())
+            {
+                //if not all async validations have completed then the state is invalid
+                ViewState.IsValid = false;
+            }
+            else
+            {
                 //check if any validation errors present in stores
                 ViewState.IsValid = !EditContext.GetValidationMessages().Any();
 
@@ -480,7 +484,7 @@ namespace Gizmo.UI.View.Services
             //debounce view state change
             DebounceViewStateChanged();
 
-            Logger.LogDebug("Validation state changed , IsValid {valid}, IsValidating {isValidating}", ViewState.IsValid, ViewState.IsValidating);
+            Logger.LogTrace("Validation state changed IsValid {valid}, IsValidating {isValidating}", ViewState.IsValid, ViewState.IsValidating);
         }
 
         #endregion
@@ -496,8 +500,8 @@ namespace Gizmo.UI.View.Services
             if (HaveAsyncValidatingProperties)
             {
                 _asyncFieldValidationObservable = new();
-                _asyncValidationSubscription = _asyncFieldValidationObservable
-                     .Buffer(TimeSpan.FromSeconds(1))
+                _asyncFieldValidationSubscription = _asyncFieldValidationObservable
+                     .Buffer(TimeSpan.FromSeconds(3)) //buffer changes for x time
                      .Where(result => result.Count > 0)
                      .Select(result => result.Distinct())
                      .Subscribe(ProcessFieldBuffer);
@@ -512,7 +516,7 @@ namespace Gizmo.UI.View.Services
             _editContext.OnValidationStateChanged -= OnEditContextValidationStateChanged;
             _editContext.OnValidationRequested -= OnEditContextValidationRequested;
 
-            _asyncValidationSubscription?.Dispose();
+            _asyncFieldValidationSubscription?.Dispose();
         }
 
         #endregion
@@ -521,6 +525,8 @@ namespace Gizmo.UI.View.Services
         {
             foreach (var field in fields)
             {
+                Increment(field);
+
                 //get cancellation token associated with field and remove it from dictionary
                 if (_cancellations.Remove(field, out var previousCancellationToken))
                 {
@@ -538,17 +544,10 @@ namespace Gizmo.UI.View.Services
                 Task.Run(() => OnValidateAsync(field, ValidationTrigger.Input, cts.Token), cts.Token)
                     .ContinueWith((t) =>
                     {
-                        //compare current and previous cancellation token for the field
-                        //what we want to solve is the cases where we might have completed with async validation of the field but in mean time
-                        //new validation have started SO WE MUST NOT REMOVE the filed from _asyncValidatingProperties as its being async validated 
-                        //removing it would make it state inconsistent 
-                        //not sure if this 100% working approach
-
-                        if (!_cancellations.TryGetValue(field, out var currentCancellationToken) || currentCancellationToken != previousCancellationToken)
+                        //the property is no longer being async validated
+                        //decrement and check if other outstanding async validation is running for this field
+                        if (!DecrementCompare(field))
                         {
-                            //the property is no longer being async validated
-                            _asyncValidatingProperties.Remove(field);
-
                             //check if validation task have completed successfully
                             if (t.IsCompletedSuccessfully)
                             {
@@ -562,12 +561,52 @@ namespace Gizmo.UI.View.Services
                                 //we have completed async validation, mark the field as validated
                                 _asyncValidatedProperties.Add(field);
 
-                                //notify
+                                //since async validation have completed we need to re-evaluate it in our view state
                                 EditContext.NotifyValidationStateChanged();
                             }
                         }
                     }).ConfigureAwait(false);
             }
+
+            //since async validation have started for the field/fields we need to re-evaluate it in our view state
+            EditContext.NotifyValidationStateChanged();
+        }
+
+        /// <summary>
+        /// Increment async validation for the specified field.
+        /// </summary>
+        /// <param name="field">Field identifier.</param>
+        void Increment(FieldIdentifier field)
+        {
+            var count = _asyncValidatingProperties.GetOrAdd(field, new CountRef());
+            Interlocked.Add(ref count.Value, 1);
+        }
+
+        /// <summary>
+        /// Compares if any async validations are running.
+        /// </summary>
+        /// <param name="field">Field identifier.</param>
+        /// <returns>True or false.</returns>
+        bool Compare(FieldIdentifier field)
+        {
+            var count = _asyncValidatingProperties.GetOrAdd(field, new CountRef());
+            return Volatile.Read(ref count.Value) > 0;
+        }
+
+        /// <summary>
+        /// Decrement async validation for the specified field and returns if any other operations still running.
+        /// </summary>
+        /// <param name="field"></param>
+        /// <returns>True or false.</returns>
+        bool DecrementCompare(FieldIdentifier field)
+        {
+            var count = _asyncValidatingProperties.GetOrAdd(field, new CountRef());
+            return Interlocked.Add(ref count.Value, -1) > 0;
+        }
+
+        private class CountRef
+        {
+            public int Value;
         }
     }
 }
