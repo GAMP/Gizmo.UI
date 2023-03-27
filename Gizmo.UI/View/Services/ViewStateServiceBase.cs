@@ -156,10 +156,6 @@ namespace Gizmo.UI.View.Services
         {
             _debounceService.Debounce(ViewState);
         }
-        protected void DebounceViewStateChanged(TViewState viewState)
-        {
-            _debounceService.Debounce(viewState);
-        }
 
         /// <summary>
         /// Gets view state.
