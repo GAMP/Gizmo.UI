@@ -1,6 +1,7 @@
 ﻿using Gizmo.UI.View.States;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reactive.Linq;
@@ -37,14 +38,14 @@ namespace Gizmo.UI.View.Services
         private readonly ValidationMessageStore _validationMessageStore;
         private readonly HashSet<FieldIdentifier> _asyncValidatedProperties = new(); //use hashset so same field does not appear more than once
         private readonly HashSet<FieldIdentifier> _asyncValidatingProperties = new(); //use hashset so same field does not appear more than once
-  
+
         #endregion
 
-        private const string CURRENT_ASYNC_VALIDATING_PROPERTIES = "CurrentAsyncValidations";       
-        private readonly Dictionary<FieldIdentifier, CancellationTokenSource> _cancellations = new();
+        private const string CURRENT_ASYNC_VALIDATING_PROPERTIES = "CurrentAsyncValidations";
+        private readonly ConcurrentDictionary<FieldIdentifier, CancellationTokenSource> _cancellations = new();
         private Subject<FieldIdentifier> _asyncFieldValidationObservable;
         private IDisposable? _asyncValidationSubscription;
-       
+
 
         #region PROPERTIES
 
@@ -204,7 +205,6 @@ namespace Gizmo.UI.View.Services
 
             //execute any custom validation            
             OnValidate(fieldIdentifier, trigger);
-            OnCustomValidation(fieldIdentifier, _validationMessageStore);
 
             //check if normal validation produced any errors
             //in general we wont need to trigger async validation until those errors resolved
@@ -371,69 +371,6 @@ namespace Gizmo.UI.View.Services
             EditContext.Validate();
         }
 
-        #region OBSOLETE
-
-        /// <summary>
-        /// Validates all validation participating properties on current <see cref="ViewStateServiceBase.ViewState"/>.
-        /// </summary>
-        protected async Task ValidatePropertiesAsync()
-        {
-            //get validation information from the view state
-            var validationObjects = ValidationInfo.Get(ViewState);
-
-            //process each validating object instance
-            foreach (var validationObject in validationObjects)
-            {
-                foreach (var property in validationObject.Properties)
-                {
-                    if (validationObject.Instance == null)
-                        continue;
-
-                    //validate each individual property on the object instance
-                    await ValidatePropertyAsync(new FieldIdentifier(validationObject.Instance, property.Name));
-                }
-            }
-
-            //once we have validated the properties raise validation state change event            
-            _editContext.NotifyValidationStateChanged();
-        }
-
-        protected async Task ValidatePropertyAsync(Expression<Func<TViewState, object?>> property)
-        {
-            MemberExpression body = (MemberExpression)property.Body;
-            var propertyName = body.Member.Name;
-
-            await ValidatePropertyAsync(new FieldIdentifier(ViewState, propertyName));
-            EditContext.NotifyValidationStateChanged();
-        }
-
-        protected async Task ValidatePropertyAsync(FieldIdentifier fieldIdentifier)
-        {
-            //the field identifier will have the property name and obect
-
-            //since we revalidating we need to remove the messages associated with the field
-            _validationMessageStore.Clear(fieldIdentifier);
-
-            //data annotation validation
-            DataAnnotationsValidator.Validate(fieldIdentifier, _validationMessageStore);
-
-            //custom validation
-            OnCustomValidation(fieldIdentifier, _validationMessageStore);
-
-            await OnCustomValidationAsync(fieldIdentifier, _validationMessageStore);
-        }
-
-        protected virtual void OnCustomValidation(FieldIdentifier fieldIdentifier, ValidationMessageStore validationMessageStore)
-        {
-        }
-
-        protected virtual Task OnCustomValidationAsync(FieldIdentifier fieldIdentifier, ValidationMessageStore validationMessageStore)
-        {
-            return Task.CompletedTask;
-        }
-
-        #endregion
-
         #endregion
 
         #region PROTECTED VIRTUAL
@@ -463,6 +400,7 @@ namespace Gizmo.UI.View.Services
         /// This function will run after all data annotation validation rules have passed and will not be executed if any erros are found.<br></br>
         /// This function is only responsible validating the field specified <paramref name="fieldIdentifier"/> and adding any associated errors with <see cref="AddError"/> method.
         /// </remarks>
+        /// <returns>Empty string array.</returns>
         protected virtual Task<IEnumerable<string>> OnValidateAsync(FieldIdentifier fieldIdentifier, ValidationTrigger validationTrigger, CancellationToken cancellationToken = default)
         {
             //do custom async validation here
@@ -583,8 +521,8 @@ namespace Gizmo.UI.View.Services
         {
             foreach (var field in fields)
             {
-                //get cancellation token associated with field
-                if (_cancellations.TryGetValue(field, out var previousCancellationToken))
+                //get cancellation token associated with field and remove it from dictionary
+                if (_cancellations.Remove(field, out var previousCancellationToken))
                 {
                     if (!previousCancellationToken.IsCancellationRequested)
                         previousCancellationToken.Cancel();
@@ -593,35 +531,41 @@ namespace Gizmo.UI.View.Services
                 //create new cancellation token source
                 var cts = new CancellationTokenSource();
 
-                //remove any previous cancellation
-                _cancellations.Remove(field);
-
                 //add new cancellation source
-                _cancellations.Add(field, cts);
+                _cancellations.TryAdd(field, cts);
 
                 //schedule new task
                 Task.Run(() => OnValidateAsync(field, ValidationTrigger.Input, cts.Token), cts.Token)
                     .ContinueWith((t) =>
-                    {                        
-                        //the property is no longer being async validated
-                        _asyncValidatingProperties.Remove(field);
+                    {
+                        //compare current and previous cancellation token for the field
+                        //what we want to solve is the cases where we might have completed with async validation of the field but in mean time
+                        //new validation have started SO WE MUST NOT REMOVE the filed from _asyncValidatingProperties as its being async validated 
+                        //removing it would make it state inconsistent 
+                        //not sure if this 100% working approach
 
-                        //check if validation task have completed successfully
-                        if (t.IsCompletedSuccessfully)
+                        if (!_cancellations.TryGetValue(field, out var currentCancellationToken) || currentCancellationToken != previousCancellationToken)
                         {
-                            //add the results in case no cancellation occured
-                            if(cts.IsCancellationRequested == false)
+                            //the property is no longer being async validated
+                            _asyncValidatingProperties.Remove(field);
+
+                            //check if validation task have completed successfully
+                            if (t.IsCompletedSuccessfully)
                             {
-                                foreach(var error in t.Result)
-                                    AddError(field, error,false);                             
+                                //add the results in case no cancellation occured
+                                if (cts.IsCancellationRequested == false)
+                                {
+                                    foreach (var error in t.Result)
+                                        AddError(field, error, false);
+                                }
+
+                                //we have completed async validation, mark the field as validated
+                                _asyncValidatedProperties.Add(field);
+
+                                //notify
+                                EditContext.NotifyValidationStateChanged();
                             }
-
-                            //we have completed async validation
-                            _asyncValidatedProperties.Add(field);
-
-                            //notify
-                            EditContext.NotifyValidationStateChanged();
-                        }    
+                        }
                     }).ConfigureAwait(false);
             }
         }

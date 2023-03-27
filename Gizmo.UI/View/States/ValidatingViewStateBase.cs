@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-
-namespace Gizmo.UI.View.States
+﻿namespace Gizmo.UI.View.States
 {
     /// <summary>
     /// Validating view state base class.
@@ -13,12 +11,22 @@ namespace Gizmo.UI.View.States
         #endregion
 
         #region PROPERTIES
-        
-        [PropertyChangeIgnore()]
-        public bool? IsValid { get { return _isValid; } set { SetProperty(ref _isValid, value); } }
-        
-        [PropertyChangeIgnore()]
-        public bool IsValidating { get { return _isValidating; } set { SetProperty(ref _isValidating, value); } }
+
+        public bool? IsValid
+        {
+            get { return _isValid; }
+            set { _isValid = value; }
+        }
+
+        public bool IsValidating
+        {
+            get
+            { return _isValidating; }
+            set
+            {
+                _isValidating = value;
+            }
+        }
 
         #endregion
     }
