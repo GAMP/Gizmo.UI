@@ -41,7 +41,7 @@ namespace Gizmo.UI.View.Services
         #endregion
 
         private const string CURRENT_ASYNC_VALIDATING_PROPERTIES = "CurrentAsyncValidations";
-        private Subject<FieldIdentifier> _asyncFieldValidationObservable;
+        private Subject<FieldIdentifier>? _asyncFieldValidationObservable;
         private IDisposable? _asyncFieldValidationSubscription;
 
         #region PROPERTIES
@@ -192,6 +192,26 @@ namespace Gizmo.UI.View.Services
         }
 
         /// <summary>
+        /// Checks if async validation have completed for this field.
+        /// </summary>
+        /// <param name="accessor">Field accessor.</param>
+        /// <returns>True or false.</returns>
+        public bool IsAsyncValidated<T>(Expression<Func<T>> accessor)
+        {
+            return IsAsyncValidated(FieldIdentifier.Create(accessor));
+        }
+
+        /// <summary>
+        /// Checks if async validation have completed for this field.
+        /// </summary>
+        /// <param name="fieldIdentifier">Field identifier.</param>
+        /// <returns>True or false.</returns>
+        public bool IsAsyncValidated(FieldIdentifier fieldIdentifier)
+        {
+            return _asyncValidatedProperties.Contains(fieldIdentifier);
+        }
+
+        /// <summary>
         /// Validates property.
         /// </summary>
         /// <param name="accessor">Field accessor.</param>
@@ -325,7 +345,11 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         /// <returns>True or false.</returns>
         protected bool IsAsyncPropertiesValidated()
-        {
+        {           
+            var determineResult = OnDeterminIsAsyncPropertiesValidated();
+            if(determineResult.IsHandled)
+                return determineResult.IsHandled;
+
             //TODO : Not the most optimal way
             var instanceInfo = ValidationInfo.Get(ViewState);
 
@@ -378,6 +402,15 @@ namespace Gizmo.UI.View.Services
         #region PROTECTED VIRTUAL
 
         /// <summary>
+        /// Allows to override default check for async properties validation completion state.
+        /// </summary>
+        /// <returns>Determine result.</returns>
+        protected virtual AsyncValidatedDetermineResult OnDeterminIsAsyncPropertiesValidated()
+        {
+            return AsyncValidatedDetermineResult.DefaultUnhandled;
+        }
+
+        /// <summary>
         /// Does custom validation.
         /// </summary>
         /// <param name="fieldIdentifier">Field identifier.</param>
@@ -412,11 +445,13 @@ namespace Gizmo.UI.View.Services
         /// <summary>
         /// Called once <see cref="EditContext.OnValidationStateChanged"/> have been processed and all <see cref="TViewState"/> validation status properties are set.
         /// </summary>
+        /// <remarks>
+        /// This helper method can be used to parse current validation state and update any desired view state values.<br></br>
+        /// For example we can check if async validation is still running for some property and provide visual feedback through view state such as ViewState.IsUserNameValidating = true.
+        /// </remarks>
         protected virtual void OnValidationStateChanged()
         {
-            //this is helper method can be used to parse current validation state and update any desired view state values
-            //for example we can check if async validation is still running for some property and provide visual feedback through view state
-            //for example ViewState.IsUserNameValidating = true
+            
         }
 
         #endregion
@@ -501,7 +536,7 @@ namespace Gizmo.UI.View.Services
             {
                 _asyncFieldValidationObservable = new();
                 _asyncFieldValidationSubscription = _asyncFieldValidationObservable
-                     .Buffer(TimeSpan.FromSeconds(3)) //buffer changes for x time
+                     .Buffer(TimeSpan.FromSeconds(1)) //buffer changes for x time
                      .Where(result => result.Count > 0)
                      .Select(result => result.Distinct())
                      .Subscribe(ProcessFieldBuffer);
@@ -596,7 +631,7 @@ namespace Gizmo.UI.View.Services
         /// <summary>
         /// Decrement async validation for the specified field and returns if any other operations still running.
         /// </summary>
-        /// <param name="field"></param>
+        /// <param name="field">Field identifier.</param>
         /// <returns>True or false.</returns>
         bool DecrementCompare(FieldIdentifier field)
         {
@@ -607,6 +642,38 @@ namespace Gizmo.UI.View.Services
         private class CountRef
         {
             public int Value;
+        }
+    }
+
+    /// <summary>
+    /// Result allowing provide information for current async properties validation state.
+    /// </summary>
+    public class AsyncValidatedDetermineResult
+    {
+        /// <summary>
+        /// Default unhandled result.
+        /// </summary>
+        public static readonly AsyncValidatedDetermineResult DefaultUnhandled = new() { IsHandled = false };
+
+        /// <summary>
+        /// Default handled and true result.
+        /// </summary>
+        public static readonly AsyncValidatedDetermineResult DefaultTrue = new() { IsHandled = true , IsAsyncValidated = true};
+
+        /// <summary>
+        /// Indicates that check was handled.
+        /// </summary>
+        public bool IsHandled
+        {
+            get;init;
+        }
+
+        /// <summary>
+        /// Indicates that all async fields considered validated.
+        /// </summary>
+        public bool IsAsyncValidated
+        {
+            get;init;
         }
     }
 }
