@@ -344,7 +344,7 @@ namespace Gizmo.UI.View.Services
         /// <returns>True or false.</returns>
         protected bool IsAsyncPropertiesValidated()
         {           
-            var determineResult = OnDeterminIsAsyncPropertiesValidated();
+            var determineResult = OnDetermineIsAsyncPropertiesValidated();
             if(determineResult.IsHandled)
                 return determineResult.IsHandled;
 
@@ -403,7 +403,7 @@ namespace Gizmo.UI.View.Services
         /// Allows to override default check for async properties validation completion state.
         /// </summary>
         /// <returns>Determine result.</returns>
-        protected virtual AsyncValidatedDetermineResult OnDeterminIsAsyncPropertiesValidated()
+        protected virtual AsyncValidatedDetermineResult OnDetermineIsAsyncPropertiesValidated()
         {
             return AsyncValidatedDetermineResult.DefaultUnhandled;
         }
