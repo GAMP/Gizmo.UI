@@ -196,7 +196,7 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         /// <param name="accessor">Field accessor.</param>
         /// <returns>True or false.</returns>
-        public bool IsAsyncValidated<T>(Expression<Func<T>> accessor)
+        protected bool IsAsyncValidated<T>(Expression<Func<T>> accessor)
         {
             return IsAsyncValidated(FieldIdentifier.Create(accessor));
         }
@@ -206,7 +206,7 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         /// <param name="fieldIdentifier">Field identifier.</param>
         /// <returns>True or false.</returns>
-        public bool IsAsyncValidated(FieldIdentifier fieldIdentifier)
+        protected bool IsAsyncValidated(FieldIdentifier fieldIdentifier)
         {
             return _asyncValidatedProperties.Contains(fieldIdentifier);
         }
@@ -217,6 +217,9 @@ namespace Gizmo.UI.View.Services
         /// <param name="accessor">Field accessor.</param>
         /// <param name="trigger">Trigger.</param>
         /// <param name="notifyFieldChanged">Indicates if <see cref="EditContext.NotifyFieldChanged"/> should be called.</param>
+        /// <remarks>
+        /// In case <paramref name="notifyValidationStateChanged"/> is equal to true there is no need to call <see cref="ViewStateServiceBase{TViewState}.DebounceViewStateChanged"/> after this function as it will be called automatically.
+        /// </remarks>
         protected void ValidateProperty<T>(Expression<Func<T>> accessor, ValidationTrigger trigger = ValidationTrigger.Input, bool notifyValidationStateChanged = true)
         {
             ValidateProperty(FieldIdentifier.Create(accessor), trigger, notifyValidationStateChanged);
@@ -278,7 +281,7 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         /// <param name="fieldIdentifier">Field identifier.</param>
         /// <param name="notifyValidationStateChanged">Indicates if <see cref="EditContext.NotifyValidationStateChanged"/> should be called once async validation is scheduled.</param>
-        private void RunAsyncValidation(FieldIdentifier fieldIdentifier, bool notifyValidationStateChanged = true)
+        protected void RunAsyncValidation(FieldIdentifier fieldIdentifier, bool notifyValidationStateChanged = true)
         {
             //should not be null if there are async properties but just in case lets check
             if (_asyncFieldValidationObservable == null)
@@ -557,7 +560,7 @@ namespace Gizmo.UI.View.Services
         {
             foreach (var field in fields)
             {
-                DecrementAsyncValidations(field);
+                IncrementAsyncValidations(field);
 
                 //get cancellation token associated with field and remove it from dictionary
                 if (_cancellations.Remove(field, out var previousCancellationToken) && !previousCancellationToken.IsCancellationRequested)
@@ -590,11 +593,11 @@ namespace Gizmo.UI.View.Services
                                 }
 
                                 //we have completed async validation, mark the field as validated
-                                _asyncValidatedProperties.Add(field);
-
-                                //since async validation have completed we need to re-evaluate it in our view state
-                                EditContext.NotifyValidationStateChanged();
+                                _asyncValidatedProperties.Add(field);                       
                             }
+
+                            //since async validation have completed we need to re-evaluate it in our view state
+                            EditContext.NotifyValidationStateChanged();
                         }
                     }).ConfigureAwait(false);
             }
@@ -607,7 +610,7 @@ namespace Gizmo.UI.View.Services
         /// Increment async validation for the specified field.
         /// </summary>
         /// <param name="field">Field identifier.</param>
-        void DecrementAsyncValidations(FieldIdentifier field)
+        private void IncrementAsyncValidations(FieldIdentifier field)
         {
             var count = _asyncValidatingProperties.GetOrAdd(field, new CountRef());
             Interlocked.Add(ref count.Value, 1);
@@ -618,7 +621,7 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         /// <param name="field">Field identifier.</param>
         /// <returns>True or false.</returns>
-        bool CompareAsyncValidations(FieldIdentifier field)
+        private bool CompareAsyncValidations(FieldIdentifier field)
         {
             var count = _asyncValidatingProperties.GetOrAdd(field, new CountRef());
             return Volatile.Read(ref count.Value) > 0;
@@ -629,7 +632,7 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         /// <param name="field">Field identifier.</param>
         /// <returns>True or false.</returns>
-        bool DecrementCompareAsyncValidations(FieldIdentifier field)
+        private bool DecrementCompareAsyncValidations(FieldIdentifier field)
         {
             var count = _asyncValidatingProperties.GetOrAdd(field, new CountRef());
             return Interlocked.Add(ref count.Value, -1) > 0;
