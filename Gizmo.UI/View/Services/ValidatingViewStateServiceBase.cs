@@ -188,7 +188,7 @@ namespace Gizmo.UI.View.Services
         /// <returns>True or false.</returns>
         protected bool IsAsyncValidating(FieldIdentifier fieldIdentifier)
         {
-            return Compare(fieldIdentifier);
+            return CompareAsyncValidations(fieldIdentifier);
         }
 
         /// <summary>
@@ -376,7 +376,7 @@ namespace Gizmo.UI.View.Services
         {
             foreach (var keyValue in _asyncValidatingProperties)
             {
-                if (Compare(keyValue.Key))
+                if (CompareAsyncValidations(keyValue.Key))
                     return true;
             }
 
@@ -448,8 +448,7 @@ namespace Gizmo.UI.View.Services
         /// For example we can check if async validation is still running for some property and provide visual feedback through view state such as ViewState.IsUserNameValidating = true.
         /// </remarks>
         protected virtual void OnValidationStateChanged()
-        {
-            
+        {            
         }
 
         #endregion
@@ -558,7 +557,7 @@ namespace Gizmo.UI.View.Services
         {
             foreach (var field in fields)
             {
-                Increment(field);
+                DecrementAsyncValidations(field);
 
                 //get cancellation token associated with field and remove it from dictionary
                 if (_cancellations.Remove(field, out var previousCancellationToken) && !previousCancellationToken.IsCancellationRequested)
@@ -578,7 +577,7 @@ namespace Gizmo.UI.View.Services
                     {
                         //the property is no longer being async validated
                         //decrement and check if other outstanding async validation is running for this field
-                        if (!DecrementCompare(field))
+                        if (!DecrementCompareAsyncValidations(field))
                         {
                             //check if validation task have completed successfully
                             if (t.IsCompletedSuccessfully)
@@ -608,7 +607,7 @@ namespace Gizmo.UI.View.Services
         /// Increment async validation for the specified field.
         /// </summary>
         /// <param name="field">Field identifier.</param>
-        void Increment(FieldIdentifier field)
+        void DecrementAsyncValidations(FieldIdentifier field)
         {
             var count = _asyncValidatingProperties.GetOrAdd(field, new CountRef());
             Interlocked.Add(ref count.Value, 1);
@@ -619,7 +618,7 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         /// <param name="field">Field identifier.</param>
         /// <returns>True or false.</returns>
-        bool Compare(FieldIdentifier field)
+        bool CompareAsyncValidations(FieldIdentifier field)
         {
             var count = _asyncValidatingProperties.GetOrAdd(field, new CountRef());
             return Volatile.Read(ref count.Value) > 0;
@@ -630,7 +629,7 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         /// <param name="field">Field identifier.</param>
         /// <returns>True or false.</returns>
-        bool DecrementCompare(FieldIdentifier field)
+        bool DecrementCompareAsyncValidations(FieldIdentifier field)
         {
             var count = _asyncValidatingProperties.GetOrAdd(field, new CountRef());
             return Interlocked.Add(ref count.Value, -1) > 0;
@@ -639,38 +638,6 @@ namespace Gizmo.UI.View.Services
         private class CountRef
         {
             public int Value;
-        }
-    }
-
-    /// <summary>
-    /// Result allowing provide information for current async properties validation state.
-    /// </summary>
-    public class AsyncValidatedDetermineResult
-    {
-        /// <summary>
-        /// Default unhandled result.
-        /// </summary>
-        public static readonly AsyncValidatedDetermineResult DefaultUnhandled = new() { IsHandled = false };
-
-        /// <summary>
-        /// Default handled and true result.
-        /// </summary>
-        public static readonly AsyncValidatedDetermineResult DefaultTrue = new() { IsHandled = true , IsAsyncValidated = true};
-
-        /// <summary>
-        /// Indicates that check was handled.
-        /// </summary>
-        public bool IsHandled
-        {
-            get;init;
-        }
-
-        /// <summary>
-        /// Indicates that all async fields considered validated.
-        /// </summary>
-        public bool IsAsyncValidated
-        {
-            get;init;
         }
     }
 }
