@@ -55,17 +55,17 @@ namespace Gizmo.UI.Services
         #region VIRTUAL FUNCTIONS
 
         /// <inheritdoc/>
-        public virtual ValueTask<IEnumerable<CultureInfo>> GetSupportedCulturesAsync()
+        public virtual ValueTask<IEnumerable<CultureInfo>> GetSupportedCulturesAsync(CancellationToken cToken = default)
         {
             CultureInfo[] cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
 
             var supportedCultures = cultures
-                .Where(culture => !string.IsNullOrEmpty(culture.Name))
+                .Where(culture => !string.IsNullOrEmpty(culture.Name) && culture.Name.Length > 2) // Ignore invariant cultures
                 .Where(culture =>
                 {
                     try
                     {
-                        var resourceSet = _resourceManager?.GetResourceSet(culture, true, false);
+                        var resourceSet = _resourceManager.GetResourceSet(culture, true, false);
                         return resourceSet != null;
                     }
                     catch (CultureNotFoundException ex)
@@ -74,19 +74,12 @@ namespace Gizmo.UI.Services
                         return false;
                     }
                 })
-                .DistinctBy(x => x.TwoLetterISOLanguageName)
-                .Select(culture => new CultureInfo(culture.Name))
+                .DistinctBy(x => x.LCID)
+                .Select(culture => new CultureInfo(culture.LCID))
                 .ToList();
 
-            //replace invariant culture with default english
-            if (supportedCultures.Contains(CultureInfo.InvariantCulture))
-            {
-                supportedCultures.Remove(CultureInfo.InvariantCulture);
-                supportedCultures.Insert(0, new("en-us"));
-            }
-
             if (!supportedCultures.Any())
-                supportedCultures.Add(new("en-us"));
+                supportedCultures.Add(new("en-US"));
 
             SetCurrencyOptions(supportedCultures);
 
