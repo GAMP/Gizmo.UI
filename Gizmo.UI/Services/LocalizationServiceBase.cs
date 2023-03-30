@@ -1,6 +1,8 @@
-﻿using Microsoft.Extensions.Localization;
+﻿using System.Globalization;
+using Gizmo.Client.UI;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
-using System.Globalization;
+using Microsoft.Extensions.Options;
 
 namespace Gizmo.UI.Services
 {
@@ -10,10 +12,14 @@ namespace Gizmo.UI.Services
     public abstract class LocalizationServiceBase : ILocalizationService
     {
         #region CONSTRUCTOR
-        public LocalizationServiceBase(ILogger logger, IStringLocalizer stringLocalizer)
+        protected LocalizationServiceBase(
+            ILogger logger,
+            IStringLocalizer stringLocalizer,
+            IOptions<ClientUIOptions> options)
         {
-            _logger = logger;
-            _localizer = stringLocalizer;
+            Logger = logger;
+            Localizer = stringLocalizer;
+            _cultureOptions = options.Value.CultureOutputOptions;
         }
         #endregion
 
@@ -21,22 +27,15 @@ namespace Gizmo.UI.Services
 
         #region PRIVATE
 
-        private readonly object[] _DEFAULT_ARGS = Array.Empty<object>();
-        private readonly IStringLocalizer _localizer;
-        private readonly ILogger _logger;
-        private readonly HashSet<CultureInfo> _cultures = new()
-        {
-            new CultureInfo("en-US"),
-            new CultureInfo("ru-RU"),
-            new CultureInfo("el-GR")
-        };
+        private readonly object[] _defaultArgs = Array.Empty<object>();
+        private readonly CultureOutputOptions _cultureOptions;
 
         #endregion
 
         #region PUBLIC
 
         /// <inheritdoc/>
-        public virtual IEnumerable<CultureInfo> SupportedCultures => _cultures;
+        public abstract IEnumerable<CultureInfo> SupportedCultures { get; }
 
         #endregion
 
@@ -49,18 +48,12 @@ namespace Gizmo.UI.Services
         /// <summary>
         /// Gets localizer instance.
         /// </summary>
-        private IStringLocalizer Localizer
-        {
-            get { return _localizer; }
-        }
+        private IStringLocalizer Localizer { get; }
 
         /// <summary>
         /// Gets logger instance.
         /// </summary>
-        protected ILogger Logger
-        {
-            get { return _logger; }
-        }  
+        protected ILogger Logger { get; }
 
         #endregion
 
@@ -70,10 +63,13 @@ namespace Gizmo.UI.Services
 
         #region PUBLIC
 
+        public abstract Task SetCurrentCultureAsync(CultureInfo culture);
+        public abstract CultureInfo GetCulture(string twoLetterISOLanguageName);
+
         /// <inheritdoc/>
         public string GetString(string key)
         {
-            return GetString(key, _DEFAULT_ARGS);
+            return GetString(key, _defaultArgs);
         }
 
         /// <inheritdoc/>
@@ -85,7 +81,7 @@ namespace Gizmo.UI.Services
         /// <inheritdoc/>
         public string GetStringUpper(string key)
         {
-            return GetStringUpper(key, _DEFAULT_ARGS);
+            return GetStringUpper(key, _defaultArgs);
         }
 
         /// <inheritdoc/>
@@ -97,7 +93,7 @@ namespace Gizmo.UI.Services
         /// <inheritdoc/>
         public string GetStringLower(string key)
         {
-            return GetStringLower(key, _DEFAULT_ARGS);
+            return GetStringLower(key, _defaultArgs);
         }
 
         /// <inheritdoc/>
@@ -108,6 +104,18 @@ namespace Gizmo.UI.Services
 
         #endregion
 
+        #region PRIVATE
+        protected void OverrideCultureCurrencyConfiguration(IEnumerable<CultureInfo> cultures)
+        {
+            if (!string.IsNullOrWhiteSpace(_cultureOptions.CurrencySymbol))
+            {
+                foreach (var culture in cultures)
+                {
+                    culture.NumberFormat.CurrencySymbol = _cultureOptions.CurrencySymbol;
+                }
+            }
+        }
+        #endregion
         #endregion
     }
 }
