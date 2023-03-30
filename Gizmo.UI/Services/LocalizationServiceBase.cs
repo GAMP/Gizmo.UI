@@ -36,20 +36,10 @@ namespace Gizmo.UI.Services
         private readonly ResourceManager _resourceManager;
 
         private readonly ClientCurrencyOptions _cultureOptions;
-        private IEnumerable<CultureInfo>? _supportedCultures;
 
         #endregion
 
         #region PROPERTIES
-        /// <inheritdoc/>
-        
-        //TODO: NOT SURE IF THIS IS THE BEST WAY TO DO THIS
-        public IEnumerable<CultureInfo> SupportedCultures =>
-            _supportedCultures ??= GetSupportedCulturesAsync()
-                .ConfigureAwait(false)
-                .GetAwaiter()
-                .GetResult();
-
         /// <summary>
         /// Gets logger instance.
         /// </summary>
@@ -60,26 +50,17 @@ namespace Gizmo.UI.Services
         #region ABSTRACT FUNCTIONS
         /// <inheritdoc/>
         public abstract Task SetCurrentCultureAsync(CultureInfo culture);
-        /// <inheritdoc/>
-        public abstract CultureInfo GetCulture(string twoLetterISOLanguageName);
         #endregion
 
         #region VIRTUAL FUNCTIONS
 
-        /// <summary>
-        /// Gets supported cultures.
-        /// </summary>
-        /// <returns>
-        /// Supported cultures.
-        /// </returns>
-        protected virtual ValueTask<IEnumerable<CultureInfo>> GetSupportedCulturesAsync()
+        /// <inheritdoc/>
+        public virtual ValueTask<IEnumerable<CultureInfo>> GetSupportedCulturesAsync()
         {
-            var supportedLanguages = new string[] { "en-US", "el-GR", "ru-RUl" };
-
             CultureInfo[] cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
 
             var supportedCultures = cultures
-                .Where(culture => supportedLanguages.Contains(culture.Name))
+                .Where(culture => !string.IsNullOrEmpty(culture.Name))
                 .Where(culture =>
                 {
                     try
