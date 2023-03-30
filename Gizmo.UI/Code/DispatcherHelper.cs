@@ -34,13 +34,20 @@ namespace Gizmo.UI
             }
         }
 
+        /// <summary>
+        /// Invokes specified action on current dispatcher.
+        /// </summary>
+        /// <param name="action">Action.</param>
+        /// <exception cref="NotSupportedException">is thrown in case this method invoked in non desktop environment.</exception>
         public static async Task InvokeAsync(Action action)
-        {           
+        {
+            //this operation is only supported on wpf host
+            if (_isWebBrowser)
+                throw new NotSupportedException();
+
             var result = _invokeAsyncMethod?.Invoke(_dispatcher, new[] { action });
             if(result!= null && _taskProperty?.GetValue(result) is Task task)
-            {
-                await task;
-            }
+                await task;           
         }
     }
 }
