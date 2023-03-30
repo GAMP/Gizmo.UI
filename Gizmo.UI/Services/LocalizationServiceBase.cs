@@ -1,5 +1,9 @@
 ﻿using System.Globalization;
+using System.Reflection;
+using System.Resources;
+
 using Gizmo.Client.UI;
+
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -14,12 +18,17 @@ namespace Gizmo.UI.Services
         #region CONSTRUCTOR
         protected LocalizationServiceBase(
             ILogger logger,
-            IStringLocalizer stringLocalizer,
+            IStringLocalizer localizer,
             IOptions<ClientUIOptions> options)
         {
             Logger = logger;
-            Localizer = stringLocalizer;
-            _cultureOptions = options.Value.CultureOutputOptions;
+            _localizer = localizer;
+            _cultureOptions = options.Value.CurrencyOptions;
+
+            var prop = localizer.GetType().GetField("_localizer", BindingFlags.NonPublic | BindingFlags.Instance);
+            _resourceManagerStringLocalizer = (ResourceManagerStringLocalizer)prop.GetValue(localizer);
+            prop = _resourceManagerStringLocalizer?.GetType().GetField("_resourceManager", BindingFlags.NonPublic | BindingFlags.Instance);
+            _resourceManager = (ResourceManager)prop.GetValue(_resourceManagerStringLocalizer);
         }
         #endregion
 
@@ -28,14 +37,9 @@ namespace Gizmo.UI.Services
         #region PRIVATE
 
         private readonly object[] _defaultArgs = Array.Empty<object>();
-        private readonly CultureOutputOptions _cultureOptions;
-
-        #endregion
-
-        #region PUBLIC
-
-        /// <inheritdoc/>
-        public abstract IEnumerable<CultureInfo> SupportedCultures { get; }
+        private readonly ClientCurrencyOptions _cultureOptions;
+        private readonly ResourceManager _resourceManager;
+        private readonly ResourceManagerStringLocalizer _resourceManagerStringLocalizer;
 
         #endregion
 
@@ -43,12 +47,37 @@ namespace Gizmo.UI.Services
 
         #region PROPERTIES
 
+        private IEnumerable<CultureInfo>? _supportedCultures;
+
+        public IEnumerable<CultureInfo> SupportedCultures
+        {
+            get
+            {
+                if (_supportedCultures is null)
+                {
+                    Task.Run(() => GetSupportedCulturesAsync())
+                        .ContinueWith(task =>
+                        {
+                            if (task.IsFaulted)
+                                _supportedCultures = new[]
+                                {
+                                    new CultureInfo("en_us"),
+                                };
+                            else
+                            _supportedCultures = task.Result.Result;
+                        });
+                }
+                
+                return _supportedCultures!;
+            }
+        }
+
         #region PRIVATE
 
         /// <summary>
         /// Gets localizer instance.
         /// </summary>
-        private IStringLocalizer Localizer { get; }
+        private IStringLocalizer _localizer;
 
         /// <summary>
         /// Gets logger instance.
@@ -63,8 +92,40 @@ namespace Gizmo.UI.Services
 
         #region PUBLIC
 
+        #region ABSTRACT
         public abstract Task SetCurrentCultureAsync(CultureInfo culture);
         public abstract CultureInfo GetCulture(string twoLetterISOLanguageName);
+        #endregion
+
+        public virtual ValueTask<IEnumerable<CultureInfo>> GetSupportedCulturesAsync()
+        {
+            CultureInfo[] cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
+
+            var supportedCultures = cultures.Where(culture =>
+            {
+                try
+                {
+                    var resourceSet = _resourceManager?.GetResourceSet(culture, true, false);
+                    return resourceSet != null;
+                }
+                catch (CultureNotFoundException ex)
+                {
+                    Logger.LogError(ex, "Could not obtain resource set for {culture}.", culture);
+                    return false;
+                }
+            }).DistinctBy(x => x.TwoLetterISOLanguageName).ToList();
+
+            //replace invariant culture with default english
+            if (supportedCultures.Contains(CultureInfo.InvariantCulture))
+            {
+                supportedCultures.Remove(CultureInfo.InvariantCulture);
+                supportedCultures.Insert(0, CultureInfo.GetCultureInfo("en-us"));
+            }
+
+            SetCurrencyOptions();
+
+            return new ValueTask<IEnumerable<CultureInfo>>(supportedCultures);
+        }
 
         /// <inheritdoc/>
         public string GetString(string key)
@@ -75,7 +136,7 @@ namespace Gizmo.UI.Services
         /// <inheritdoc/>
         public virtual string GetString(string key, params object[] arguments)
         {
-            return Localizer.GetString(key, arguments);
+            return _localizer.GetString(key, arguments);
         }
 
         /// <inheritdoc/>
@@ -104,12 +165,12 @@ namespace Gizmo.UI.Services
 
         #endregion
 
-        #region PRIVATE
-        protected void OverrideCultureCurrencyConfiguration(IEnumerable<CultureInfo> cultures)
+        #region PROTECTED
+        protected void SetCurrencyOptions()
         {
-            if (!string.IsNullOrWhiteSpace(_cultureOptions.CurrencySymbol))
+            if (!string.IsNullOrWhiteSpace(_cultureOptions.CurrencySymbol) && _supportedCultures is not null)
             {
-                foreach (var culture in cultures)
+                foreach (var culture in _supportedCultures)
                 {
                     culture.NumberFormat.CurrencySymbol = _cultureOptions.CurrencySymbol;
                 }
