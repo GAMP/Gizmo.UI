@@ -24,39 +24,31 @@ namespace Gizmo.UI.Services
             Logger = logger;
             _localizer = localizer;
             _cultureOptions = options.Value;
-
-            var prop = localizer.GetType().GetField("_localizer", BindingFlags.NonPublic | BindingFlags.Instance);
-            _resourceManagerStringLocalizer = (ResourceManagerStringLocalizer)prop.GetValue(localizer);
-            prop = _resourceManagerStringLocalizer?.GetType().GetField("_resourceManager", BindingFlags.NonPublic | BindingFlags.Instance);
-            _resourceManager = (ResourceManager)prop.GetValue(_resourceManagerStringLocalizer);
+            _resourceManager = GetResourceManager();
         }
         #endregion
 
-        #region FIELDS
-
-        #region PRIVATE
+        #region PRIVATE FIELDS
 
         private readonly object[] _defaultArgs = Array.Empty<object>();
-        private readonly ClientCurrencyOptions _cultureOptions;
-        private readonly ResourceManager _resourceManager;
-        private readonly ResourceManagerStringLocalizer _resourceManagerStringLocalizer;
 
-        #endregion
+        private readonly IStringLocalizer _localizer;
+        private readonly ResourceManager _resourceManager;
+
+        private readonly ClientCurrencyOptions _cultureOptions;
+        private IEnumerable<CultureInfo>? _supportedCultures;
 
         #endregion
 
         #region PROPERTIES
-
-        private IEnumerable<CultureInfo>? _supportedCultures;
-
-        public IEnumerable<CultureInfo> SupportedCultures => _supportedCultures ??= GetSupportedCultures();
-
-        #region PRIVATE
-
-        /// <summary>
-        /// Gets localizer instance.
-        /// </summary>
-        private IStringLocalizer _localizer;
+        /// <inheritdoc/>
+        
+        //TODO: NOT SURE IF THIS IS THE BEST WAY TO DO THIS
+        public IEnumerable<CultureInfo> SupportedCultures =>
+            _supportedCultures ??= GetSupportedCulturesAsync()
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
 
         /// <summary>
         /// Gets logger instance.
@@ -65,23 +57,27 @@ namespace Gizmo.UI.Services
 
         #endregion
 
-        #endregion
-
-        #region FUNCTIONS
-
-        #region PUBLIC
-
-        #region ABSTRACT
+        #region ABSTRACT FUNCTIONS
+        /// <inheritdoc/>
         public abstract Task SetCurrentCultureAsync(CultureInfo culture);
+        /// <inheritdoc/>
         public abstract CultureInfo GetCulture(string twoLetterISOLanguageName);
         #endregion
 
-        public virtual IEnumerable<CultureInfo> GetSupportedCultures()
+        #region VIRTUAL FUNCTIONS
+
+        /// <summary>
+        /// Gets supported cultures.
+        /// </summary>
+        /// <returns>
+        /// Supported cultures.
+        /// </returns>
+        protected virtual ValueTask<IEnumerable<CultureInfo>> GetSupportedCulturesAsync()
         {
             var supportedLanguages = new string[] { "en-US", "el-GR", "ru-RUl" };
-            
+
             CultureInfo[] cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
-            
+
             var supportedCultures = cultures
                 .Where(culture => supportedLanguages.Contains(culture.Name))
                 .Where(culture =>
@@ -105,12 +101,36 @@ namespace Gizmo.UI.Services
             if (supportedCultures.Contains(CultureInfo.InvariantCulture))
             {
                 supportedCultures.Remove(CultureInfo.InvariantCulture);
-                supportedCultures.Insert(0, CultureInfo.GetCultureInfo("en-us"));
+                supportedCultures.Insert(0, new("en-us"));
             }
+
+            if (!supportedCultures.Any())
+                supportedCultures.Add(new("en-us"));
 
             SetCurrencyOptions(supportedCultures);
 
-            return supportedCultures;
+            return new(supportedCultures);
+        }
+
+        #endregion
+
+        #region SHARED FUNCTIONS
+
+        /// <summary>
+        /// Sets currency options  from the configuration for the <paramref name="cultures"/>.
+        /// </summary>
+        /// <param name="cultures">
+        /// Cultures to set currency options for.
+        /// </param>
+        protected virtual void SetCurrencyOptions(IEnumerable<CultureInfo> cultures)
+        {
+            if (!string.IsNullOrWhiteSpace(_cultureOptions.CurrencySymbol))
+            {
+                foreach (var culture in cultures)
+                {
+                    culture.NumberFormat.CurrencySymbol = _cultureOptions.CurrencySymbol;
+                }
+            }
         }
 
         /// <inheritdoc/>
@@ -151,19 +171,24 @@ namespace Gizmo.UI.Services
 
         #endregion
 
-        #region PROTECTED
-        protected void SetCurrencyOptions(IEnumerable<CultureInfo> cultures)
+        #region PRIVATE FUNCTIONS
+
+        private ResourceManager GetResourceManager()
         {
-            if (!string.IsNullOrWhiteSpace(_cultureOptions.CurrencySymbol))
-            {
-                foreach (var culture in cultures)
-                {
-                    culture.NumberFormat.CurrencySymbol = _cultureOptions.CurrencySymbol;
-                }
-            }
+            var field = _localizer.GetType().GetField("_localizer", BindingFlags.NonPublic | BindingFlags.Instance)
+                ?? throw new InvalidOperationException("Resource manager is invalid");
+
+            if (field.GetValue(_localizer) is not ResourceManagerStringLocalizer resourceManagerStringLocalizer)
+                throw new InvalidOperationException("Resource manager is invalid");
+
+            field = resourceManagerStringLocalizer.GetType().GetField("_resourceManager", BindingFlags.NonPublic | BindingFlags.Instance)
+                ?? throw new InvalidOperationException("Resource manager is invalid");
+
+            return field.GetValue(resourceManagerStringLocalizer) is not ResourceManager resourceManager
+                ? throw new InvalidOperationException("Resource manager is invalid")
+                : resourceManager;
         }
-        #endregion
-        
+
         #endregion
     }
 }
