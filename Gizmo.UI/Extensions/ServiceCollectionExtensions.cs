@@ -130,7 +130,10 @@ namespace Gizmo.UI
         public static IServiceCollection AddUIServices(this IServiceCollection services)
         {
             services.AddSingleton<NavigationService>();
-            services.AddTransient<ViewStateDebounceService>();
+            
+            services.AddTransient<DebounceActionService>();
+            services.AddTransient<DebounceActionAsyncService>();
+            services.AddTransient<DebounceActionAsyncWithParamService>();
             return services;
         }
 

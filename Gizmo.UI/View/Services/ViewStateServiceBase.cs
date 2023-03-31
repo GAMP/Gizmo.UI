@@ -24,7 +24,7 @@ namespace Gizmo.UI.View.Services
         {
             ViewState = viewState;
             NavigationService = serviceProvider.GetRequiredService<NavigationService>();
-            _debounceService = serviceProvider.GetRequiredService<ViewStateDebounceService>();
+            _debounceService = serviceProvider.GetRequiredService<DebounceActionService>();
 
             _associatedRoutes = GetType().GetCustomAttributes<RouteAttribute>().ToList() ?? Enumerable.Empty<RouteAttribute>().ToList();
             _navigatedRoutes = new(5, _associatedRoutes.Count);
@@ -38,7 +38,7 @@ namespace Gizmo.UI.View.Services
         private readonly ConcurrentDictionary<string, bool> _navigatedRoutes; //keep visited routes and local paths of URL
         private readonly ConcurrentStack<string> _stackRoutes; //keep visited routes
 
-        private readonly ViewStateDebounceService _debounceService;
+        private readonly DebounceActionService _debounceService;
         #endregion
 
         #region PROPERTIES
@@ -154,7 +154,7 @@ namespace Gizmo.UI.View.Services
         /// <exception cref="ArgumentNullException">thrown in case <paramref name="viewState"/> is equal to null.</exception>
         protected void DebounceViewStateChanged()
         {
-            _debounceService.Debounce(ViewState);
+            _debounceService.Debounce(ViewState.RaiseChanged);
         }
 
         /// <summary>

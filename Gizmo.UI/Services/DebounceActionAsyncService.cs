@@ -6,30 +6,27 @@ using Microsoft.Extensions.Logging;
 namespace Gizmo.UI.Services;
 
 /// <summary>
-///  Asynchronously debounces in the concurrent queue.
+///  Asynchronously debounces the action without params in the concurrent queue.
 /// </summary>
-/// <typeparam name="T">Debounce item type.</typeparam>
 /// <remarks>Disposable.</remarks>
-public abstract class DebounceAsyncServiceBase2<T> : IDisposable
+public sealed class DebounceActionAsyncService : IDisposable
 {
     #region CONSTRUCTOR
-    protected DebounceAsyncServiceBase2(ILogger logger)
+    public DebounceActionAsyncService(ILogger<DebounceActionAsyncService> logger)
     {
-        Logger = logger;
+        _logger = logger;
         DebounceSubscribe();
     }
-
     #endregion
 
     #region FIELDS
-    private readonly Subject<(T item, CancellationToken cToken)> _subject = new();
+    private ILogger _logger;
+    private readonly Subject<(Func<CancellationToken, Task> Action, CancellationToken CToken)> _subject = new();
     private IDisposable? _subscription;
     private int _debounceBufferTime = 1000; // 1 sec by default
     #endregion
 
     #region PROPERTIES
-
-    protected ILogger Logger { get; }
 
     /// <summary>
     /// Debounce buffertime.
@@ -53,19 +50,21 @@ public abstract class DebounceAsyncServiceBase2<T> : IDisposable
     #endregion
 
     #region PUBLIC FUNCTIONS
+    
     /// <summary>
     /// Debounces the data.
     /// </summary>
-    /// <param name="item">Item to debounce.</param>
+    /// <param name="action">Item to debounce.</param>
     /// <param name="cToken">Cancellation token.</param>
-    /// <exception cref="ArgumentNullException">thrown in case <paramref name="item"/>is equal to null.</exception>
-    public void Debounce(T item, CancellationToken cToken = default)
+    /// <exception cref="ArgumentNullException">thrown in case <paramref name="action"/>is equal to null.</exception>
+    public void Debounce(Func<CancellationToken, Task> action, CancellationToken cToken = default)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
 
-        _subject.OnNext((item, cToken));
+        _subject.OnNext((action, cToken));
     }
+
     /// <summary>
     /// Disposes the object.
     /// </summary>
@@ -83,30 +82,20 @@ public abstract class DebounceAsyncServiceBase2<T> : IDisposable
         // The debounce action
         _subscription = _subject
             .Buffer(TimeSpan.FromMilliseconds(_debounceBufferTime))
-            .Where(items => items.Count > 0)
-            .Distinct()
+            .Where(x => x.Count > 0)
             .Subscribe(items =>
             {
-                foreach (var (item, cToken) in items)
+                foreach (var item in items.DistinctBy(x => x.GetHashCode()))
                 {
-                    _ = Task.Run(() => OnDebounce(item, cToken))
-                        .ContinueWith(task =>
+                    _ = Task.Run(() => item.Action(item.CToken))
+                            .ContinueWith(task =>
                             {
                                 if (task.IsFaulted)
-                                    Logger.LogError(task.Exception, "Error in view state change debounce handler.");
-                            }, cToken)
-                        .ConfigureAwait(false);
+                                    _logger.LogError(task.Exception, "Error in view state change debounce handler.");
+                            })
+                            .ConfigureAwait(false);
                 }
             });
     }
-    #endregion
-
-    #region ABSTRACT FUNCTIONS
-    /// <summary>
-    /// Called when debounce is triggered.
-    /// </summary>
-    /// <param name="item">Item to debounce.</param>
-    /// <param name="cToken">Cancellation token.</param>
-    protected abstract Task OnDebounce(T item, CancellationToken cToken);
     #endregion
 }

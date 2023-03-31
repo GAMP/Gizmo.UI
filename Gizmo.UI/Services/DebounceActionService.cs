@@ -6,30 +6,27 @@ using Microsoft.Extensions.Logging;
 namespace Gizmo.UI.Services;
 
 /// <summary>
-/// Gneric debouncig service base.
+/// Synchronously debounces the actions in the concurrent queue.
 /// </summary>
-/// <typeparam name="T">Debounce item type.</typeparam>
-public abstract class DebounceServiceBase<T> : IDisposable
+public sealed class DebounceActionService : IDisposable
 {
     #region CONSTRUCTOR
-    protected DebounceServiceBase(ILogger logger)
+    public DebounceActionService(ILogger<DebounceActionService> logger)
     {
-        Logger = logger;
+        _logger = logger;
         DebounceSubscribe();
     }
-
     #endregion
 
     #region FIELDS
-    private readonly Subject<T> _subject = new();
+    private ILogger _logger;
+    private readonly Subject<Action> _subject = new();
     private IDisposable? _subscription;
     private int _debounceBufferTime = 1000; // 1 sec by default
     #endregion
 
     #region PROPERTIES
-
-    protected ILogger Logger { get; }
-
+    
     /// <summary>
     /// Debounce buffertime.
     /// </summary>
@@ -52,18 +49,24 @@ public abstract class DebounceServiceBase<T> : IDisposable
     #endregion
 
     #region PUBLIC FUNCTIONS
+   
     /// <summary>
-    /// Debounces the data.
-    /// </summary>
-    /// <param name="item">Item to debounce.</param>
-    /// <exception cref="ArgumentNullException">thrown in case <paramref name="item"/>is equal to null.</exception>
-    public void Debounce(T item)
+   /// Debounces the data.
+   /// </summary>
+   /// <param name="action">
+   /// Item to debounce.
+   /// </param>
+   /// <exception cref="ArgumentNullException">
+   /// thrown in case <paramref name="action"/>is equal to null.
+   /// </exception>
+    public void Debounce(Action action)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
 
-        _subject.OnNext(item);
+        _subject.OnNext(action);
     }
+    
     /// <summary>
     /// Disposes the object.
     /// </summary>
@@ -81,31 +84,21 @@ public abstract class DebounceServiceBase<T> : IDisposable
         // The debounce action
         _subscription = _subject
             .Buffer(TimeSpan.FromMilliseconds(_debounceBufferTime))
-            .Where(items => items.Count > 0)
-            .Distinct()
+            .Where(x => x.Count > 0)
             .Subscribe(items =>
             {
-                for (int i = 0; i < items.Count; i++)
+                foreach (var item in items.DistinctBy(x => x.GetHashCode()))
                 {
                     try
                     {
-                        OnDebounce(items[i]);
+                        item.Invoke();
                     }
-                    catch (Exception exception)
+                    catch (Exception ex)
                     {
-                        //the handlers are outside of our code so we should handle the exception and log it
-                        Logger.LogError(exception, "Error in view state change debounce handler.");
+                        _logger.LogError(ex, "Error in view state change debounce handler.");
                     }
                 }
             });
     }
-    #endregion
-
-    #region ABSTRACT FUNCTIONS
-    /// <summary>
-    /// Called when debounce is triggered.
-    /// </summary>
-    /// <param name="item">Item to debounce.</param>
-    protected abstract void OnDebounce(T item);
     #endregion
 }

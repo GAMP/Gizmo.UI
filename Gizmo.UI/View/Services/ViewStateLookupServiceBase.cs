@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 
+using Gizmo.UI.Services;
 using Gizmo.UI.View.States;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +21,7 @@ public abstract class ViewStateLookupServiceBase<TLookUpkey, TViewState> : ViewS
 {
     #region CONSTRUCTOR
     protected ViewStateLookupServiceBase(ILogger logger, IServiceProvider serviceProvider) : base(logger, serviceProvider) =>
-        _debounceService = serviceProvider.GetRequiredService<ViewStateDebounceService>();
+        _debounceService = serviceProvider.GetRequiredService<DebounceActionService>();
     #endregion
 
     #region PRIVATE FIELDS
@@ -28,7 +29,7 @@ public abstract class ViewStateLookupServiceBase<TLookUpkey, TViewState> : ViewS
     private readonly SemaphoreSlim _cacheAccessLock = new(1);
     private readonly SemaphoreSlim _initializeLock = new(1);
     private readonly ConcurrentDictionary<TLookUpkey, TViewState> _cache = new();
-    private readonly ViewStateDebounceService _debounceService;
+    private readonly DebounceActionService _debounceService;
     #endregion
 
     #region PUBLIC EVENTS
@@ -89,7 +90,7 @@ public abstract class ViewStateLookupServiceBase<TLookUpkey, TViewState> : ViewS
 
             _cache.TryAdd(key, viewState);
 
-            _debounceService.Debounce(viewState);
+            _debounceService.Debounce(viewState.RaiseChanged);
 
             return viewState;
         }
@@ -160,7 +161,7 @@ public abstract class ViewStateLookupServiceBase<TLookUpkey, TViewState> : ViewS
     /// </summary>
     /// <param name="viewState">View state.</param>
     /// <exception cref="ArgumentNullException">thrown in case <paramref name="viewState"/>is equal to null.</exception>
-    protected void DebounceViewStateChange(IViewState viewState) => _debounceService.Debounce(viewState);
+    protected void DebounceViewStateChange(IViewState viewState) => _debounceService.Debounce(viewState.RaiseChanged);
     /// <summary>
     /// Handles the changes of the incoming data.
     /// </summary>
