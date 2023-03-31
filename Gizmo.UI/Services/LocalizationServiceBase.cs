@@ -99,12 +99,32 @@ namespace Gizmo.UI.Services
         protected virtual void SetCurrencyOptions(IEnumerable<CultureInfo> cultures)
         {
             if (!string.IsNullOrWhiteSpace(_cultureOptions.CurrencySymbol))
-            {
                 foreach (var culture in cultures)
-                {
                     culture.NumberFormat.CurrencySymbol = _cultureOptions.CurrencySymbol;
-                }
-            }
+
+            if (_cultureOptions.CurrencyDecimalDigits.HasValue)
+                foreach (var culture in cultures)
+                    culture.NumberFormat.CurrencyDecimalDigits = _cultureOptions.CurrencyDecimalDigits.Value;
+
+            if (!string.IsNullOrWhiteSpace(_cultureOptions.CurrencyDecimalSeparator))
+                foreach (var culture in cultures)
+                    culture.NumberFormat.CurrencyDecimalSeparator = _cultureOptions.CurrencyDecimalSeparator;
+
+            if (!string.IsNullOrWhiteSpace(_cultureOptions.CurrencyGroupSeparator))
+                foreach (var culture in cultures)
+                    culture.NumberFormat.CurrencyGroupSeparator = _cultureOptions.CurrencyGroupSeparator;
+
+            if (_cultureOptions.CurrencyGroupSizes != null)
+                foreach (var culture in cultures)
+                    culture.NumberFormat.CurrencyGroupSizes = _cultureOptions.CurrencyGroupSizes;
+
+            if (_cultureOptions.CurrencyNegativePattern.HasValue)
+                foreach (var culture in cultures)
+                    culture.NumberFormat.CurrencyNegativePattern = _cultureOptions.CurrencyNegativePattern.Value;
+
+            if (_cultureOptions.CurrencyPositivePattern.HasValue)
+                foreach (var culture in cultures)
+                    culture.NumberFormat.CurrencyPositivePattern = _cultureOptions.CurrencyPositivePattern.Value;
         }
 
         /// <inheritdoc/>
