@@ -20,7 +20,7 @@ public sealed class DebounceActionAsyncService : IDisposable
     #endregion
 
     #region FIELDS
-    private ILogger _logger;
+    private readonly ILogger _logger;
     private readonly Subject<(Func<CancellationToken, Task> Action, CancellationToken CToken)> _subject = new();
     private IDisposable? _subscription;
     private int _debounceBufferTime = 1000; // 1 sec by default
@@ -50,7 +50,7 @@ public sealed class DebounceActionAsyncService : IDisposable
     #endregion
 
     #region PUBLIC FUNCTIONS
-    
+
     /// <summary>
     /// Debounces the data.
     /// </summary>
@@ -91,7 +91,7 @@ public sealed class DebounceActionAsyncService : IDisposable
                             .ContinueWith(task =>
                             {
                                 if (task.IsFaulted)
-                                    _logger.LogError(task.Exception, "Error in view state change debounce handler.");
+                                    _logger.LogError(task.Exception, "DebounceActionAsyncService: Debounce action faulted.");
                             })
                             .ConfigureAwait(false);
                 }

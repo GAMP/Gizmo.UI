@@ -19,14 +19,14 @@ public sealed class DebounceActionService : IDisposable
     #endregion
 
     #region FIELDS
-    private ILogger _logger;
+    private readonly ILogger _logger;
     private readonly Subject<Action> _subject = new();
     private IDisposable? _subscription;
     private int _debounceBufferTime = 1000; // 1 sec by default
     #endregion
 
     #region PROPERTIES
-    
+
     /// <summary>
     /// Debounce buffertime.
     /// </summary>
@@ -49,16 +49,16 @@ public sealed class DebounceActionService : IDisposable
     #endregion
 
     #region PUBLIC FUNCTIONS
-   
+
     /// <summary>
-   /// Debounces the data.
-   /// </summary>
-   /// <param name="action">
-   /// Item to debounce.
-   /// </param>
-   /// <exception cref="ArgumentNullException">
-   /// thrown in case <paramref name="action"/>is equal to null.
-   /// </exception>
+    /// Debounces the data.
+    /// </summary>
+    /// <param name="action">
+    /// Item to debounce.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// thrown in case <paramref name="action"/>is equal to null.
+    /// </exception>
     public void Debounce(Action action)
     {
         if (action is null)
@@ -66,7 +66,7 @@ public sealed class DebounceActionService : IDisposable
 
         _subject.OnNext(action);
     }
-    
+
     /// <summary>
     /// Disposes the object.
     /// </summary>
@@ -95,7 +95,7 @@ public sealed class DebounceActionService : IDisposable
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Error in view state change debounce handler.");
+                        _logger.LogError(ex, "DebounceActionService: Error while executing the action.");
                     }
                 }
             });
