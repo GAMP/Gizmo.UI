@@ -67,7 +67,7 @@ namespace Gizmo.UI.View.Services
 
         #region VIRTUAL FUNCTIONS
 
-        public async Task IntializeAsync(CancellationToken ct)
+        public async Task InitializeAsync(CancellationToken ct)
         {
             await _initSemaphore.WaitAsync(ct);
             try

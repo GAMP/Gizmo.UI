@@ -24,7 +24,7 @@ namespace Gizmo.UI
             //initialize view services
             foreach (var service in viewServices)
             {
-                await service.IntializeAsync(ct);
+                await service.InitializeAsync(ct);
             }
         } 
 
