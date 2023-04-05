@@ -12,6 +12,8 @@ namespace Gizmo.UI
     {
         #region READ ONLY FIELDS
         private static readonly Type STRING_TYPE = typeof(string);
+        private static readonly Type DECIMAL_TYPE = typeof(decimal);
+        private static readonly Type DECIMAL_NULLABLE_TYPE = typeof(decimal?);
         private static readonly ConcurrentDictionary<Type, IEnumerable<PropertyInfo>> _propertyCache = new();
         #endregion
 
@@ -35,7 +37,7 @@ namespace Gizmo.UI
         {
             //must be a primitve type https://docs.microsoft.com/en-us/dotnet/api/system.type.isprimitive?view=net-6.0 or string
             //other types might need to be added
-            return p.PropertyType.IsPrimitive || p.PropertyType == STRING_TYPE;
+            return p.PropertyType.IsPrimitive || p.PropertyType == STRING_TYPE || p.PropertyType == DECIMAL_TYPE || p.PropertyType == DECIMAL_NULLABLE_TYPE;
         };
 
         /// <summary>
