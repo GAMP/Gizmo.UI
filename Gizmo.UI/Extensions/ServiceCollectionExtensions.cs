@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
+﻿using System.Reflection;
 using Gizmo.UI.Services;
 using Gizmo.UI.View.Services;
 using Gizmo.UI.View.States;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
@@ -43,7 +43,7 @@ namespace Gizmo.UI
 
             var viewStates = assembly
                 .GetTypes()
-                .Where(type => type.IsAbstract == false && type.GetInterfaces().Contains(typeof(IViewState)))
+                .Where(type => !type.IsAbstract && type.GetInterfaces().Contains(typeof(IViewState)))
                 .Select(type => new { Type = type, Attribute = type.GetCustomAttribute<RegisterAttribute>() })
                 .Where(result => result.Attribute != null)
                 .ToList();
@@ -84,7 +84,7 @@ namespace Gizmo.UI
 
             var viewServices = assembly
                 .GetTypes()
-                .Where(type => type.IsAbstract == false && type.GetInterfaces().Contains(typeof(IViewService)))
+                .Where(type => !type.IsAbstract && type.GetInterfaces().Contains(typeof(IViewService)))
                 .Select(type => new { Type = type, Attribute = type.GetCustomAttribute<RegisterAttribute>() })
                 .Where(result => result.Attribute != null)
                 .ToList();
@@ -130,7 +130,6 @@ namespace Gizmo.UI
         public static IServiceCollection AddUIServices(this IServiceCollection services)
         {
             services.AddSingleton<NavigationService>();
-            
             services.AddTransient<DebounceActionService>();
             services.AddTransient<DebounceActionAsyncService>();
             services.AddTransient<DebounceActionAsyncWithParamService>();
@@ -144,7 +143,7 @@ namespace Gizmo.UI
         /// <param name="services">Service collection.</param>
         /// <returns>Service collection.</returns>
         /// <exception cref="ArgumentException">thrown in case some of ui composition conditions are not met.</exception>
-        public static IServiceCollection AddDialogSerive<TService>(this IServiceCollection services) where TService : IDialogService
+        public static IServiceCollection AddDialogService<TService>(this IServiceCollection services) where TService : IDialogService
         {
             //add dialog service by type
             services.TryAddSingleton(typeof(TService), (sp) =>
@@ -161,9 +160,7 @@ namespace Gizmo.UI
                     throw new ArgumentException("App assembly not configured.");
 
                 //load our app assembly
-                var requestingAssembly = AppDomain.CurrentDomain.GetAssemblies()
-                .Where(assembly => string.Compare(Path.GetFileName(assembly.GetName().CodeBase), appAssemblyName, true) == 0)
-                .FirstOrDefault();
+                var requestingAssembly = Array.Find(AppDomain.CurrentDomain.GetAssemblies(), assembly => string.Compare(Path.GetFileName(assembly.GetName().CodeBase), appAssemblyName, true) == 0);
 
                 //check if app assembly is loaded
                 if (requestingAssembly == null)
@@ -172,7 +169,7 @@ namespace Gizmo.UI
                 //get all dialog services implementation
                 var dialogServices = requestingAssembly
                     .GetTypes()
-                    .Where(type => type.IsAbstract == false && type.GetInterfaces().Contains(typeof(IDialogService)))
+                    .Where(type => !type.IsAbstract && type.GetInterfaces().Contains(typeof(IDialogService)))
                     .ToList();
 
                 //check if any dialog services exist in app assembly
@@ -180,7 +177,7 @@ namespace Gizmo.UI
                     throw new ArgumentException($"No dialog services registered in app assembly {appAssemblyName}.");
 
                 //get dialog service type, we could check if multiple types found ?
-                var dialogServiceType = dialogServices.First();
+                var dialogServiceType = dialogServices[0];
 
                 //create instance of dialog service
                 return ActivatorUtilities.CreateInstance(sp, dialogServiceType);
