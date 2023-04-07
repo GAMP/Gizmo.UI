@@ -3,102 +3,103 @@ using System.Reactive.Subjects;
 
 using Microsoft.Extensions.Logging;
 
-namespace Gizmo.UI.Services;
-
-/// <summary>
-/// Synchronously debounces the actions in the concurrent queue.
-/// </summary>
-public sealed class DebounceActionService : IDisposable
+namespace Gizmo.UI.Services
 {
-    #region CONSTRUCTOR
-    public DebounceActionService(ILogger<DebounceActionService> logger)
-    {
-        _logger = logger;
-        DebounceSubscribe();
-    }
-    #endregion
-
-    #region FIELDS
-    private readonly ILogger _logger;
-    private readonly Subject<Action> _subject = new();
-    private IDisposable? _subscription;
-    private int _debounceBufferTime = 1000; // 1 sec by default
-    #endregion
-
-    #region PROPERTIES
-
     /// <summary>
-    /// Debounce buffertime.
+    /// Synchronously debounces the actions in the concurrent queue.
     /// </summary>
-    public int DebounceBufferTime
+    public sealed class DebounceActionService : IDisposable
     {
-        get { return _debounceBufferTime; }
-        set
+        #region CONSTRUCTOR
+        public DebounceActionService(ILogger<DebounceActionService> logger)
         {
-            if (value <= 0)
-                throw new ArgumentOutOfRangeException(nameof(DebounceBufferTime));
-
-            _debounceBufferTime = value;
-
-            //resubscribe
-            _subscription?.Dispose();
+            _logger = logger;
             DebounceSubscribe();
         }
-    }
+        #endregion
 
-    #endregion
+        #region FIELDS
+        private readonly ILogger _logger;
+        private readonly Subject<Action> _subject = new();
+        private IDisposable? _subscription;
+        private int _debounceBufferTime = 1000; // 1 sec by default
+        #endregion
 
-    #region PUBLIC FUNCTIONS
+        #region PROPERTIES
 
-    /// <summary>
-    /// Debounces the data.
-    /// </summary>
-    /// <param name="action">
-    /// Item to debounce.
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    /// thrown in case <paramref name="action"/>is equal to null.
-    /// </exception>
-    public void Debounce(Action action)
-    {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-
-        _subject.OnNext(action);
-    }
-
-    /// <summary>
-    /// Disposes the object.
-    /// </summary>
-    public void Dispose()
-    {
-        _subject?.Dispose();
-        _subscription?.Dispose();
-    }
-
-    #endregion
-
-    #region PRIVATE FUNCTIONS
-    private void DebounceSubscribe()
-    {
-        // The debounce action
-        _subscription = _subject
-            .Buffer(TimeSpan.FromMilliseconds(_debounceBufferTime))
-            .Where(x => x.Count > 0)
-            .Subscribe(items =>
+        /// <summary>
+        /// Debounce buffertime.
+        /// </summary>
+        public int DebounceBufferTime
+        {
+            get { return _debounceBufferTime; }
+            set
             {
-                foreach (var item in items.DistinctBy(x => x.GetHashCode()))
+                if (value <= 0)
+                    throw new ArgumentOutOfRangeException(nameof(DebounceBufferTime));
+
+                _debounceBufferTime = value;
+
+                //resubscribe
+                _subscription?.Dispose();
+                DebounceSubscribe();
+            }
+        }
+
+        #endregion
+
+        #region PUBLIC FUNCTIONS
+
+        /// <summary>
+        /// Debounces the data.
+        /// </summary>
+        /// <param name="action">
+        /// Item to debounce.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// thrown in case <paramref name="action"/>is equal to null.
+        /// </exception>
+        public void Debounce(Action action)
+        {
+            if (action is null)
+                throw new ArgumentNullException(nameof(action));
+
+            _subject.OnNext(action);
+        }
+
+        /// <summary>
+        /// Disposes the object.
+        /// </summary>
+        public void Dispose()
+        {
+            _subject?.Dispose();
+            _subscription?.Dispose();
+        }
+
+        #endregion
+
+        #region PRIVATE FUNCTIONS
+        private void DebounceSubscribe()
+        {
+            // The debounce action
+            _subscription = _subject
+                .Buffer(TimeSpan.FromMilliseconds(_debounceBufferTime))
+                .Where(x => x.Count > 0)
+                .Subscribe(items =>
                 {
-                    try
+                    foreach (var item in items.DistinctBy(x => x.GetHashCode()))
                     {
-                        item.Invoke();
+                        try
+                        {
+                            item.Invoke();
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "DebounceActionService: Error while executing the action.");
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "DebounceActionService: Error while executing the action.");
-                    }
-                }
-            });
+                });
+        }
+        #endregion
     }
-    #endregion
 }
