@@ -2,6 +2,7 @@
 using Gizmo.UI.Services;
 using Gizmo.UI.View.Services;
 using Gizmo.UI.View.States;
+using Gizmo.Web.Manager.UI.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -129,7 +130,12 @@ namespace Gizmo.UI
         /// <returns>Service collection.</returns>
         public static IServiceCollection AddUIServices(this IServiceCollection services)
         {
-            services.AddSingleton<NavigationService>();
+            //add js runtime service, this will be required when we need access to js runtime injection outside of blazor components
+            services.TryAddSingleton<JSRuntimeService>();
+
+            //add navigation service, this will be required when we need access navigation manager outside of blazor components
+            services.TryAddSingleton<NavigationService>();
+
             services.AddTransient<DebounceActionService>();
             services.AddTransient<DebounceActionAsyncService>();
             services.AddTransient<DebounceActionAsyncWithParamService>();

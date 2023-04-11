@@ -1,0 +1,19 @@
+﻿using Microsoft.JSInterop;
+
+namespace Gizmo.Web.Manager.UI.Services
+{
+    /// <summary>
+    /// JS Runtime services, used to provide js runtime outside of blazor components.
+    /// </summary>
+    public sealed class JSRuntimeService
+    {
+        IJSRuntime? _jSRuntime;
+
+        public IJSRuntime? JSRuntime { get { return _jSRuntime; } }
+
+        public void AssociateJSRuntime(IJSRuntime jSRuntime)
+        {
+            _jSRuntime = jSRuntime;
+        }
+    }
+}
