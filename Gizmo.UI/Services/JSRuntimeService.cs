@@ -13,6 +13,9 @@ namespace Gizmo.Web.Manager.UI.Services
 
         public void AssociateJSRuntime(IJSRuntime jSRuntime)
         {
+            if(jSRuntime == null)
+                throw new ArgumentNullException(nameof(jSRuntime));
+
             _jSRuntime = jSRuntime;
         }
     }
