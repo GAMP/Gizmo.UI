@@ -1,6 +1,6 @@
 ﻿using Microsoft.JSInterop;
 
-namespace Gizmo.Web.Manager.UI.Services
+namespace Gizmo.UI.Services
 {
     /// <summary>
     /// JS Runtime services, used to provide js runtime outside of blazor components.
