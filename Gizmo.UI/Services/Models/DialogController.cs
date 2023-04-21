@@ -3,25 +3,25 @@
 namespace Gizmo.UI.Services
 {
     /// <summary>
-    /// Dynamic component dialog base.
+    /// Dialog controller.
     /// </summary>
     /// <typeparam name="TComponentType">Component type.</typeparam>
     /// <remarks>
-    /// This dialog is used to provide the ability to show dialogs with any Razor component as content.
+    /// This dialog controller is used to provide the ability to show dialogs with any Razor component as content.
     /// </remarks>
-    public sealed class DynamicComponentDialog<TComponentType,TResult> : IDynamicComponentDialog where TComponentType : ComponentBase where TResult :class
+    public sealed class DialogController<TComponentType, TResult> : IDialogController where TComponentType : ComponentBase where TResult : class
     {
         #region CONSTRUCTOR
         /// <summary>
         /// Creates new instance.
         /// </summary>
         /// <param name="componentType">Component type.</param>
-        public DynamicComponentDialog(DialogDisplayOptions displayOptions,
+        public DialogController(DialogDisplayOptions displayOptions,
             IDictionary<string, object> parameters)
         {
             ComponentType = typeof(TComponentType);
             _parameters = parameters;
-            _displayOptions= displayOptions;
+            _displayOptions = displayOptions;
         }
         #endregion
 
@@ -41,20 +41,26 @@ namespace Gizmo.UI.Services
 
         public IDictionary<string, object> Parameters { get { return _parameters; } }
 
+        public int Identifier
+        {
+            get; init;
+        }
+
         /// <summary>
         /// Gets dialog cancel callback.
         /// </summary>
-        public EventCallback CancelCallback { get; init; }
+        internal EventCallback CancelCallback { get; init; }
 
         /// <summary>
-        /// Gets optional dialog result callback.
+        /// Gets dialog result callback.
         /// </summary>
-        public EventCallback<TResult>? ResultCallback { get; init; } = null;       
+        /// <remarks><typeparamref name="TResult"/> will be equal to <see cref="EmptyDialogResult"/> when dialog does not produce any result.</remarks>
+        internal EventCallback<TResult> ResultCallback { get; init; }
 
         #endregion
 
         #region FUNCTIONS
-        
+
         public Task CancelAsync()
         {
             return CancelCallback.InvokeAsync();
@@ -62,11 +68,13 @@ namespace Gizmo.UI.Services
 
         public Task ProvideResultAsync(object result)
         {
-            if (ResultCallback == null)
-                return Task.CompletedTask;
+            return ResultCallback.InvokeAsync((TResult)result);
+        }
 
-            return ResultCallback.Value.InvokeAsync((TResult)result);
-        } 
+        public Task ProvideEmptyResult()
+        {
+            return ResultCallback.InvokeAsync((TResult)(object)EmptyDialogResult.Default);
+        }
 
         #endregion
     }

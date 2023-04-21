@@ -8,5 +8,9 @@
     /// </remarks>
     public sealed class EmptyDialogResult
     {
+        /// <summary>
+        /// Default result.
+        /// </summary>
+        public static readonly EmptyDialogResult Default = new();
     }
 }

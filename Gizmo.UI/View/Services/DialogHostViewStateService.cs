@@ -36,7 +36,7 @@ namespace Gizmo.UI.View.Services
 
         private void OnDialogServiceChanged(object? sender, EventArgs e)
         {
-            if(_dialogService.TryPeek(out var dialog)) 
+            if(_dialogService.TryGetNext(out var dialog)) 
             {
                 ViewState.Current = dialog;
             }

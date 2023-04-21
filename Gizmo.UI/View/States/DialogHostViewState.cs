@@ -13,7 +13,7 @@ namespace Gizmo.UI.View.States
     public sealed class DialogHostViewState : ViewStateBase
     {
         #region FIELDS
-        private IDynamicComponentDialog? _current;
+        private IDialogController? _current;
         #endregion
 
         #region PROPERTIES
@@ -21,7 +21,7 @@ namespace Gizmo.UI.View.States
         /// <summary>
         /// Gets current dialog.
         /// </summary>
-        public IDynamicComponentDialog? Current
+        public IDialogController? Current
         {
             get { return _current; }
             internal set { _current = value; }

@@ -27,8 +27,8 @@ namespace Gizmo.UI.Services
         public event EventHandler<EventArgs>? DialogChanged;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger _logger;
-        private readonly ConcurrentQueue<IDynamicComponentDialog> _dialogQueue = new();
-        private readonly ConcurrentDictionary<int, IDynamicComponentDialog> _dialogLookup = new();
+        private readonly ConcurrentQueue<IDialogController> _dialogQueue = new();
+        private readonly ConcurrentDictionary<int, IDialogController> _dialogLookup = new();
         private int _dialogIdentifierCounter = 0;
         #endregion
 
@@ -37,7 +37,7 @@ namespace Gizmo.UI.Services
         /// <summary>
         /// Get enumerable dialog queue.
         /// </summary>
-        public IEnumerable<IDynamicComponentDialog> DialogQueue
+        public IEnumerable<IDialogController> DialogQueue
         {
             get { return _dialogQueue; }
         }
@@ -49,7 +49,7 @@ namespace Gizmo.UI.Services
         public virtual Task<ShowDialogResult<TResult>> ShowDialogAsync<TComponent, TResult>(IDictionary<string, object> parameters,
             DialogDisplayOptions? displayOptions = null,
             DialogAddOptions? addOptions = null,
-            CancellationToken cancellationToken = default) where TComponent : ComponentBase where TResult : class
+            CancellationToken cancellationToken = default) where TComponent : ComponentBase where TResult : class, new()
         {
             //create default display options if none provided
             displayOptions ??= new();
@@ -64,7 +64,7 @@ namespace Gizmo.UI.Services
 
             //if not return the result with null task completion source (Task.CompletedTask), this will make any await calls to complete instantly
             if (dialogAddResult != DialogAddResult.Success)
-                return Task.FromResult(new ShowDialogResult<TResult>(default) { Result = dialogAddResult });
+                return Task.FromResult(new ShowDialogResult<TResult>(new()) { Result = dialogAddResult });
 
             //create new dialog identifier, right now we use int, this could be a string or any other key value.
             //this will give a dialog an unique id that we can capture in anonymous functions
@@ -95,29 +95,27 @@ namespace Gizmo.UI.Services
                 cancelCallback();
             });
 
-            //create cancel event callback
+            //create and add cancel event callback
             EventCallback cancelEventCallback = EventCallback.Factory.Create(this, cancelCallback);
-            //add cancel callback
-            parameters.Add("CancelCallback", cancelEventCallback);
+            parameters.TryAdd("CancelCallback", cancelEventCallback);
 
-            //create result event callback
-            EventCallback<TResult>? resultEventCallabck = default;
-            //only add result callback parameter if component provides non empty result
-            if (typeof(TResult) != typeof(EmptyDialogResult))
-            {
-                resultEventCallabck = EventCallback.Factory.Create(this, resultCallback);
-                parameters.Add("ResultCallback", resultEventCallabck);
-            }
+            //create and add result event callback
+            EventCallback<TResult> resultEventCallabck = EventCallback.Factory.Create(this, resultCallback);
+            parameters.TryAdd("ResultCallback", resultEventCallabck);
 
-            //create dialog and pass the parameters
-            var dialog = _dialogLookup.GetOrAdd(dialogIdentifier, (id) => new DynamicComponentDialog<TComponent, TResult>(displayOptions, parameters)
+            //add display options
+            parameters.TryAdd("DisplayOptions", displayOptions);
+
+            //create dialog controller and pass the parameters
+            var dialogController = _dialogLookup.GetOrAdd(dialogIdentifier, (id) => new DialogController<TComponent, TResult>(displayOptions, parameters)
             {
                 CancelCallback = cancelEventCallback,
                 ResultCallback = resultEventCallabck,
+                Identifier = dialogIdentifier
             });
 
             //add dialog to the queue
-            _dialogQueue.Enqueue(dialog);
+            _dialogQueue.Enqueue(dialogController);
 
             //notify of change
             DialogChanged?.Invoke(this, EventArgs.Empty);
@@ -125,7 +123,8 @@ namespace Gizmo.UI.Services
             //return dialog result
             var result = new ShowDialogResult<TResult>(completionSource)
             {
-                Result = dialogAddResult
+                Result = dialogAddResult,
+                Controller = dialogController,
             };
 
             return Task.FromResult(result);
@@ -134,12 +133,17 @@ namespace Gizmo.UI.Services
         public virtual Task<ShowDialogResult<EmptyDialogResult>> ShowDialogAsync<TComponent>(IDictionary<string, object> parameters,
             DialogDisplayOptions? displayOptions = null,
             DialogAddOptions? addOptions = null,
-            CancellationToken cancellationToken = default) where TComponent : ComponentBase
+            CancellationToken cancellationToken = default) where TComponent : ComponentBase, new()
         {
             return ShowDialogAsync<TComponent, EmptyDialogResult>(parameters, displayOptions, addOptions, cancellationToken);
         }
 
-        public bool TryRemove(int dialogId)
+        public bool TryGetNext([MaybeNullWhen(false)] out IDialogController componentDialog)
+        {
+            return _dialogQueue.TryPeek(out componentDialog);
+        }
+
+        private bool TryRemove(int dialogId)
         {
             //try to obtain dialog from lookup
             if (!_dialogLookup.TryRemove(dialogId, out var dialog))
@@ -149,12 +153,7 @@ namespace Gizmo.UI.Services
             return TryRemove(dialog);
         }
 
-        public bool TryPeek([MaybeNullWhen(false)] out IDynamicComponentDialog componentDialog)
-        {
-            return _dialogQueue.TryPeek(out componentDialog);
-        }
-
-        private bool TryRemove(IDynamicComponentDialog componentDialog)
+        private bool TryRemove(IDialogController componentDialog)
         {
             if (componentDialog == null)
                 throw new ArgumentException(nameof(componentDialog));
