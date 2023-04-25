@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
@@ -18,6 +19,7 @@ namespace Gizmo.UI.Services
         /// <param name="logger">Logger.</param>
         public DialogServiceBase(IServiceProvider serviceProvider, ILogger<DialogServiceBase> logger)
         {
+            _globalCancellationService = serviceProvider.GetRequiredService<GlobalCancellationService>();
             _serviceProvider = serviceProvider;
             _logger = logger;
         }
@@ -29,6 +31,7 @@ namespace Gizmo.UI.Services
         private readonly ILogger _logger;
         private readonly ConcurrentQueue<IDialogController> _dialogQueue = new();
         private readonly ConcurrentDictionary<int, IDialogController> _dialogLookup = new();
+        private readonly GlobalCancellationService _globalCancellationService;
         private int _dialogIdentifierCounter = 0;
         #endregion
 
@@ -51,6 +54,9 @@ namespace Gizmo.UI.Services
             DialogAddOptions? addOptions = null,
             CancellationToken cancellationToken = default) where TComponent : ComponentBase where TResult : class, new()
         {
+            //create linked token
+            cancellationToken = _globalCancellationService.GetLinkedCancellationToken(cancellationToken);
+
             //create default display options if none provided
             displayOptions ??= new();
             //create default add options if none provided

@@ -132,6 +132,9 @@ namespace Gizmo.UI
             //add js runtime service, this will be required when we need access to js runtime injection outside of blazor components
             services.TryAddSingleton<JSRuntimeService>();
 
+            //add global cancellation service
+            services.TryAddSingleton<GlobalCancellationService>();
+
             //add navigation service, this will be required when we need access navigation manager outside of blazor components
             services.TryAddSingleton<NavigationService>();
 
