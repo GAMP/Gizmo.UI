@@ -6,6 +6,7 @@
     /// <remarks>
     /// This service is required for cases where we need to trigger cancellation from single global source.
     /// An example is when some of dialogs are shown and user logs out, all dialogs needs to be cancelled and closed.
+    /// This can be also used in other scenarios such as web requests, async IO e.t.c.
     /// </remarks>
     public sealed class GlobalCancellationService : IDisposable
     {
@@ -32,15 +33,6 @@
             return GetLinkedTokenSource(cancellationToken).Token;
         }
 
-        private CancellationTokenSource GetSource()
-        {
-            lock (_lock)
-            {
-                _cts ??= new CancellationTokenSource();
-                return _cts;
-            }
-        }
-
         /// <summary>
         /// Cancells any linked operations.
         /// </summary>
@@ -61,5 +53,14 @@
                 _cts = null;
             }
         }
+
+        private CancellationTokenSource GetSource()
+        {
+            lock (_lock)
+            {
+                _cts ??= new CancellationTokenSource();
+                return _cts;
+            }
+        }      
     }
 }

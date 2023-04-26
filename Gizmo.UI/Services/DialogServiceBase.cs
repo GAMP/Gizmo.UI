@@ -19,9 +19,11 @@ namespace Gizmo.UI.Services
         /// <param name="logger">Logger.</param>
         public DialogServiceBase(IServiceProvider serviceProvider, ILogger<DialogServiceBase> logger)
         {
-            _globalCancellationService = serviceProvider.GetRequiredService<GlobalCancellationService>();
             _serviceProvider = serviceProvider;
             _logger = logger;
+
+            //WARNING injecting GlobalCancellationService will fail due to the way we register it
+            _globalCancellationService = _serviceProvider.GetRequiredService<GlobalCancellationService>();
         }
         #endregion
 
@@ -54,7 +56,7 @@ namespace Gizmo.UI.Services
             DialogAddOptions? addOptions = null,
             CancellationToken cancellationToken = default) where TComponent : ComponentBase where TResult : class, new()
         {
-            //create linked token
+            //create linked token, this will allow us to cancel any open dialog
             cancellationToken = _globalCancellationService.GetLinkedCancellationToken(cancellationToken);
 
             //create default display options if none provided
