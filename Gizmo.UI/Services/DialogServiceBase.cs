@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Gizmo.UI.Services
 {
@@ -144,6 +144,17 @@ namespace Gizmo.UI.Services
             CancellationToken cancellationToken = default) where TComponent : ComponentBase, new()
         {
             return ShowDialogAsync<TComponent, EmptyDialogResult>(parameters, displayOptions, addOptions, cancellationToken);
+        }
+
+        public virtual Task<ShowDialogResult<EmptyDialogResult>> ShowDialogAsync<TComponent, TParameters>(
+            TParameters parameters,
+            DialogDisplayOptions? displayOptions = null,
+            DialogAddOptions? addOptions = null,
+            CancellationToken cancellationToken = default)
+                where TComponent : ComponentBase, new()
+                where TParameters : DialogServiceComponentParameters, new()
+        {
+            return ShowDialogAsync<TComponent, EmptyDialogResult>(parameters.ToDictionary(), displayOptions, addOptions, cancellationToken);
         }
 
         public bool TryGetNext([MaybeNullWhen(false)] out IDialogController componentDialog)
