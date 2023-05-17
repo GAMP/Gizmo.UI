@@ -6,15 +6,15 @@
     public sealed class ShowDialogResult<TResult> where TResult : class, new()
     {
         #region CONSTRUCTOR
-        public ShowDialogResult(TaskCompletionSource<TResult>? tcs)
+        public ShowDialogResult(DialogResult addResult, TaskCompletionSource<TResult>? tcs)
         {
-            _tcs = tcs;
+            Result = addResult;
+            _task = tcs?.Task ?? Task.FromResult<TResult>(new());
         }
         #endregion
 
         #region FIELDS
-        private static readonly Task<TResult> CompletedTask = Task.FromResult<TResult>(new());
-        private readonly TaskCompletionSource<TResult>? _tcs;
+        private readonly Task<TResult> _task;
         #endregion
 
         #region PROPERTIES
@@ -22,29 +22,45 @@
         /// <summary>
         /// Gets dialog additon result.
         /// </summary>
-        public DialogAddResult Result { get; init; }
+        public DialogResult Result { get; private set; }
 
         /// <summary>
         /// Gets created dialog controller.
         /// </summary>
         /// <remarks>
-        /// The value will be null in case <see cref="Result"/> value is equal to <see cref="DialogAddResult.Failed"/>.
+        /// The value will be null in case <see cref="Result"/> value is equal to <see cref="DialogResult.Failed"/>.
         /// </remarks>
-        public IDialogController? Controller
-        {
-            get; init;
-        } = null;
+        public IDialogController? Controller { get; init; }
 
         #endregion
 
         #region FUNCTIONS
 
         /// <summary>
-        /// Waits for dialog result.
+        /// Waits for dialog result and set Result property.
         /// </summary>
-        /// <returns>Dialog result.</returns>
-        /// <exception cref="OperationCanceledException">thrown if dialog was canclled by the user or <paramref name="cancellationToken"/>.</exception>
-        public async Task<TResult> WaitForDialogResultAsync(CancellationToken cancellationToken = default) => _tcs == null ? await CompletedTask : await _tcs.Task.WaitAsync(cancellationToken);
+        /// <returns>Task.</returns>
+        public async Task<TResult?> WaitForDialogResultAsync(CancellationToken cancellationToken = default)
+        {
+            return await _task.ContinueWith(task =>
+            {
+                if(task.IsFaulted)
+                {
+                    Result = DialogResult.Failed;
+                    return null;
+                }   
+                else if(task.IsCompletedSuccessfully)
+                {
+                    Result = DialogResult.Ok;
+                    return task.Result;
+                }
+                else
+                {
+                    Result = DialogResult.Canceled;
+                    return null;
+                }
+            }, cancellationToken);
+        }
 
         #endregion
     }

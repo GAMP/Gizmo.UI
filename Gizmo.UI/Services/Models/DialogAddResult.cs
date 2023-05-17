@@ -3,15 +3,23 @@
     /// <summary>
     /// Dialog addition result.
     /// </summary>
-    public enum DialogAddResult
+    public enum DialogResult
     {
         /// <summary>
         /// Dialog was succesfuly added.
         /// </summary>
-        Success,
+        Opened,
+        /// <summary>
+        /// Dialog was closed with result.
+        ///  </summary>
+        Ok,
+        /// <summary>
+        ///  Dialog was closed without result.
+        ///  </summary>
+        Canceled,
         /// <summary>
         /// Dialog was not added.
         /// </summary>
-        Failed,
+        Failed
     }
 }

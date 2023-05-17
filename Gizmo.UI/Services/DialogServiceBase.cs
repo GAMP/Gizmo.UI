@@ -68,11 +68,11 @@ namespace Gizmo.UI.Services
             // 2) confirm that based on parameters dialog can be added
 
             //check if dialog can be added
-            DialogAddResult dialogAddResult = DialogAddResult.Success;
+            DialogResult dialogResult = DialogResult.Opened;
 
             //if not return the result with null task completion source (Task.CompletedTask), this will make any await calls to complete instantly
-            if (dialogAddResult != DialogAddResult.Success)
-                return Task.FromResult(new ShowDialogResult<TResult>(new()) { Result = dialogAddResult });
+            if (dialogResult != DialogResult.Opened)
+                return Task.FromResult(new ShowDialogResult<TResult>(dialogResult, default));
 
             //create new dialog identifier, right now we use int, this could be a string or any other key value.
             //this will give a dialog an unique id that we can capture in anonymous functions
@@ -129,9 +129,8 @@ namespace Gizmo.UI.Services
             DialogChanged?.Invoke(this, EventArgs.Empty);
 
             //return dialog result
-            var result = new ShowDialogResult<TResult>(completionSource)
+            var result = new ShowDialogResult<TResult>(dialogResult, completionSource)
             {
-                Result = dialogAddResult,
                 Controller = dialogController,
             };
 
