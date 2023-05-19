@@ -21,14 +21,7 @@ namespace Gizmo.UI.Services
         /// <exception cref="ArgumentNullException"></exception>
         public void AssociateJSRuntime(IJSRuntime jSRuntime)
         {
-<<<<<<< HEAD
             _jSRuntime = jSRuntime ?? throw new ArgumentNullException(nameof(jSRuntime));
-=======
-            if (jSRuntime == null)
-                throw new ArgumentNullException(nameof(jSRuntime));
-
-            _jSRuntime = jSRuntime;
->>>>>>> 38d1fe8a69959c09e34b607d5064256177a47197
         }
     }
 }
