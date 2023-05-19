@@ -13,7 +13,7 @@ namespace Gizmo.UI.Services
 
         public void AssociateJSRuntime(IJSRuntime jSRuntime)
         {
-            if(jSRuntime == null)
+            if (jSRuntime == null)
                 throw new ArgumentNullException(nameof(jSRuntime));
 
             _jSRuntime = jSRuntime;
