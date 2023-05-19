@@ -9,14 +9,19 @@ namespace Gizmo.UI.Services
     {
         IJSRuntime? _jSRuntime;
 
+        /// <summary>
+        /// Gets associated js runtime.
+        /// </summary>
         public IJSRuntime? JSRuntime { get { return _jSRuntime; } }
 
+        /// <summary>
+        /// Associates JS runtime with this service.
+        /// </summary>
+        /// <param name="jSRuntime">JS runtime.</param>
+        /// <exception cref="ArgumentNullException"></exception>
         public void AssociateJSRuntime(IJSRuntime jSRuntime)
         {
-            if(jSRuntime == null)
-                throw new ArgumentNullException(nameof(jSRuntime));
-
-            _jSRuntime = jSRuntime;
+            _jSRuntime = jSRuntime ?? throw new ArgumentNullException(nameof(jSRuntime));
         }
     }
 }

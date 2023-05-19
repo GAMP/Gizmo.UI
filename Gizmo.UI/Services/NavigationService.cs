@@ -25,6 +25,11 @@ namespace Gizmo.UI.Services
 
         #region FUNCTIONS
 
+        /// <summary>
+        /// Associates navigation manager with this service.
+        /// </summary>
+        /// <param name="navigationManager">Navigation manager.</param>
+        /// <exception cref="ArgumentNullException"></exception>
         public void AssociateNavigtionManager(NavigationManager navigationManager)
         {
             if (navigationManager == null)
