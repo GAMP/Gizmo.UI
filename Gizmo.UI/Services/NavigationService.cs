@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
+using Microsoft.JSInterop;
 
 namespace Gizmo.UI.Services
 {
@@ -8,8 +9,15 @@ namespace Gizmo.UI.Services
     /// </summary>
     public sealed class NavigationService
     {
-        #region FIELDS
+        #region CONSTRUCTOR
+        public NavigationService(JSRuntimeService jsRuntime)
+        {
+            _jsRuntime = jsRuntime;
+        }
+        #endregion
 
+        #region FIELDS
+        private readonly JSRuntimeService _jsRuntime;
         private NavigationManager? _navigationManager;
 
         #endregion
@@ -57,6 +65,14 @@ namespace Gizmo.UI.Services
         public string GetBaseUri()
         {
             return _navigationManager?.BaseUri ?? string.Empty;
+        }
+
+        public async Task GoBackAsync()
+        {
+            if (_jsRuntime.JSRuntime != null)
+            {
+                await _jsRuntime.JSRuntime.InvokeVoidAsync("window.history.back");
+            }
         }
 
         #endregion
