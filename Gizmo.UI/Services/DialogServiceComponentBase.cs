@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 
 namespace Gizmo.UI.Services
 {
@@ -11,7 +11,7 @@ namespace Gizmo.UI.Services
         public EventCallback CancelCallback { get; set; }
 
         [Parameter]
-        public EventCallback<EmptyDialogResult> ResultCallback { get; set; }
+        public EventCallback<EmptyComponentResult> ResultCallback { get; set; }
 
         [Parameter]
         public DialogDisplayOptions? DisplayOptions { get; set; }
@@ -23,6 +23,7 @@ namespace Gizmo.UI.Services
         [Parameter(CaptureUnmatchedValues = true)]
         public IDictionary<string, object>? Values { get; set; }
     }
+
     /// <summary>
     /// Base class for the Blazor component of Dialog service with required parameters that contains a class of parameters as Parameters property.
     /// </summary>

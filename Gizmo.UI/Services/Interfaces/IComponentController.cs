@@ -1,23 +1,7 @@
 ﻿namespace Gizmo.UI.Services
 {
-    /// <summary>
-    /// Dialog controller interface.
-    /// </summary>
-    public interface IDialogController
+    public interface IComponentController
     {
-        #region PROPERTIES
-
-        /// <summary>
-        /// Gets dialog display options.
-        /// </summary>
-        /// <remarks>
-        /// This property is a shortcut to the display options for the dialog host, same options are contained in the <see cref="Parameters"/> dictionary and can be used by dialog component itself.
-        /// </remarks>
-        DialogDisplayOptions DisplayOptions
-        {
-            get;
-        }
-
         /// <summary>
         /// Gets component type.
         /// </summary>
@@ -34,7 +18,7 @@
         /// This dictonary will always contain following values <br></br>
         /// <br></br>
         /// 1) CancelCallback (EventCallback)<br></br>
-        /// 2) ResultCallback (EventCallback[T]) where T will be eqault to <see cref="EmptyDialogResult"/> for dialogs without custom result or to any other custom result return type depending on dialog implementation.<br></br>
+        /// 2) ResultCallback (EventCallback[T]) where T will be eqault to <see cref="EmptyComponentResult"/> for dialogs without custom result or to any other custom result return type depending on dialog implementation.<br></br>
         /// 3) DisplayOptions (<see cref="DialogDisplayOptions"/>)<br></br>
         /// </remarks>
         IDictionary<string, object> Parameters { get; }
@@ -47,17 +31,13 @@
         /// </remarks>
         public int Identifier { get; }
 
-        #endregion
-
-        #region FUNCTIONS
-
         /// <summary>
-        /// Cancels dialog.
+        /// Initiates cancellation.
         /// </summary>
         Task CancelAsync();
 
         /// <summary>
-        /// Provides dialog result.
+        /// Provides custom result.
         /// </summary>
         /// <param name="result">Dialog result.</param>
         /// <exception cref="InvalidCastException">thrown in case result type does not match type of object provided by <paramref name="result"/>.</exception>
@@ -70,7 +50,5 @@
         /// This can be used when dialog does not provide any custom result in order to signal dialog closure.
         /// </remarks>
         Task ProvideEmptyResult();
-
-        #endregion
     }
 }

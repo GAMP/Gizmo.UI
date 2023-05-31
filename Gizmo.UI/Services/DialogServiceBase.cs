@@ -17,7 +17,7 @@ namespace Gizmo.UI.Services
         /// </summary>
         /// <param name="serviceProvider">Service provider.</param>
         /// <param name="logger">Logger.</param>
-        public DialogServiceBase(IServiceProvider serviceProvider, ILogger<DialogServiceBase> logger)
+        public DialogServiceBase(IServiceProvider serviceProvider, ILogger logger)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
@@ -51,7 +51,7 @@ namespace Gizmo.UI.Services
 
         #region FUNCTIONS
 
-        public virtual Task<ShowDialogResult<TResult>> ShowDialogAsync<TComponent, TResult>(IDictionary<string, object> parameters,
+        public virtual Task<AddDialogResult<TResult>> ShowDialogAsync<TComponent, TResult>(IDictionary<string, object> parameters,
             DialogDisplayOptions? displayOptions = null,
             DialogAddOptions? addOptions = null,
             CancellationToken cancellationToken = default) where TComponent : ComponentBase where TResult : class, new()
@@ -68,11 +68,11 @@ namespace Gizmo.UI.Services
             // 2) confirm that based on parameters dialog can be added
 
             //check if dialog can be added
-            DialogResult dialogResult = DialogResult.Opened;
+            AddComponentResultCode dialogResult = AddComponentResultCode.Opened;
 
             //if not return the result with null task completion source (Task.CompletedTask), this will make any await calls to complete instantly
-            if (dialogResult != DialogResult.Opened)
-                return Task.FromResult(new ShowDialogResult<TResult>(dialogResult, default));
+            if (dialogResult != AddComponentResultCode.Opened)
+                return Task.FromResult(new AddDialogResult<TResult>(dialogResult, default));
 
             //create new dialog identifier, right now we use int, this could be a string or any other key value.
             //this will give a dialog an unique id that we can capture in anonymous functions
@@ -129,7 +129,7 @@ namespace Gizmo.UI.Services
             DialogChanged?.Invoke(this, EventArgs.Empty);
 
             //return dialog result
-            var result = new ShowDialogResult<TResult>(dialogResult, completionSource)
+            var result = new AddDialogResult<TResult>(dialogResult, completionSource)
             {
                 Controller = dialogController,
             };
@@ -137,15 +137,15 @@ namespace Gizmo.UI.Services
             return Task.FromResult(result);
         }
 
-        public virtual Task<ShowDialogResult<EmptyDialogResult>> ShowDialogAsync<TComponent>(IDictionary<string, object> parameters,
+        public virtual Task<AddDialogResult<EmptyComponentResult>> ShowDialogAsync<TComponent>(IDictionary<string, object> parameters,
             DialogDisplayOptions? displayOptions = null,
             DialogAddOptions? addOptions = null,
             CancellationToken cancellationToken = default) where TComponent : ComponentBase, new()
         {
-            return ShowDialogAsync<TComponent, EmptyDialogResult>(parameters, displayOptions, addOptions, cancellationToken);
+            return ShowDialogAsync<TComponent, EmptyComponentResult>(parameters, displayOptions, addOptions, cancellationToken);
         }
 
-        public virtual Task<ShowDialogResult<EmptyDialogResult>> ShowDialogAsync<TComponent, TParameters>(
+        public virtual Task<AddDialogResult<EmptyComponentResult>> ShowDialogAsync<TComponent, TParameters>(
             TParameters parameters,
             DialogDisplayOptions? displayOptions = null,
             DialogAddOptions? addOptions = null,
@@ -153,7 +153,7 @@ namespace Gizmo.UI.Services
                 where TComponent : ComponentBase, new()
                 where TParameters : DialogServiceComponentParameters, new()
         {
-            return ShowDialogAsync<TComponent, EmptyDialogResult>(parameters.ToDictionary(), displayOptions, addOptions, cancellationToken);
+            return ShowDialogAsync<TComponent, EmptyComponentResult>(parameters.ToDictionary(), displayOptions, addOptions, cancellationToken);
         }
 
         public bool TryGetNext([MaybeNullWhen(false)] out IDialogController componentDialog)

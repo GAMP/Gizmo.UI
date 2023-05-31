@@ -54,7 +54,7 @@ namespace Gizmo.UI.Services
         /// <summary>
         /// Gets dialog result callback.
         /// </summary>
-        /// <remarks><typeparamref name="TResult"/> will be equal to <see cref="EmptyDialogResult"/> when dialog does not produce any result.</remarks>
+        /// <remarks><typeparamref name="TResult"/> will be equal to <see cref="EmptyComponentResult"/> when dialog does not produce any result.</remarks>
         internal EventCallback<TResult> ResultCallback { get; init; }
 
         #endregion
@@ -73,7 +73,7 @@ namespace Gizmo.UI.Services
 
         public Task ProvideEmptyResult()
         {
-            return ResultCallback.InvokeAsync((TResult)(object)EmptyDialogResult.Default);
+            return ResultCallback.InvokeAsync((TResult)(object)EmptyComponentResult.Default);
         }
 
         #endregion

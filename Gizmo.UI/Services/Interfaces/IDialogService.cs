@@ -20,13 +20,13 @@ namespace Gizmo.UI.Services
         /// <param name="addOptions">Dialog addition options.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Show dialog result, this result allows us to await for dialog completion or cancellation.</returns>
-        Task<ShowDialogResult<TResult>> ShowDialogAsync<TComponent, TResult>(IDictionary<string, object> parameters, DialogDisplayOptions? displayOptions = null, DialogAddOptions? addOptions = null, CancellationToken cancellationToken = default)
+        Task<AddDialogResult<TResult>> ShowDialogAsync<TComponent, TResult>(IDictionary<string, object> parameters, DialogDisplayOptions? displayOptions = null, DialogAddOptions? addOptions = null, CancellationToken cancellationToken = default)
             where TComponent : ComponentBase
             where TResult : class, new();
 
         ///<summary>Shows dialog with empty result.</summary>
         /// <inheritdoc cref="ShowDialogAsync{TComponent, TResult}(IDictionary{string, object}, DialogDisplayOptions?, DialogAddOptions?, CancellationToken)"/>
-        Task<ShowDialogResult<EmptyDialogResult>> ShowDialogAsync<TComponent>(IDictionary<string, object> parameters, DialogDisplayOptions? displayOptions = null, DialogAddOptions? addOptions = null, CancellationToken cancellationToken = default) where TComponent : ComponentBase, new();
+        Task<AddDialogResult<EmptyComponentResult>> ShowDialogAsync<TComponent>(IDictionary<string, object> parameters, DialogDisplayOptions? displayOptions = null, DialogAddOptions? addOptions = null, CancellationToken cancellationToken = default) where TComponent : ComponentBase, new();
 
         /// <summary>
         /// Tries to obtain next dialog to be shown from the queue.
