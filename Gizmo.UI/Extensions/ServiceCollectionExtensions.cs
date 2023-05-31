@@ -197,6 +197,59 @@ namespace Gizmo.UI
             return services;
         }
 
+        /// <summary>
+        /// Adds Dialog service implementation.
+        /// </summary>
+        /// <typeparam name="TService">Dialog service type.</typeparam>
+        /// <param name="services">Service collection.</param>
+        /// <returns>Service collection.</returns>
+        /// <exception cref="ArgumentException">thrown in case some of ui composition conditions are not met.</exception>
+        public static IServiceCollection AddNotificationsService<TService>(this IServiceCollection services) where TService : INotificationsService
+        {
+            //add dialog service by type
+            services.TryAddSingleton(typeof(TService), (sp) =>
+            {
+                //get current compsition options
+                //they will contain the configuration
+                var compositionOptions = sp.GetRequiredService<IOptions<UICompositionOptions>>();
+
+                //get app assembly
+                var appAssemblyName = compositionOptions.Value.AppAssembly;
+
+                //check if app assembly is configured
+                if (appAssemblyName == null)
+                    throw new ArgumentException("App assembly not configured.");
+
+                //load our app assembly
+                var requestingAssembly = Array.Find(AppDomain.CurrentDomain.GetAssemblies(), assembly => string.Compare(Path.GetFileName(assembly.GetName().CodeBase), appAssemblyName, true) == 0);
+
+                //check if app assembly is loaded
+                if (requestingAssembly == null)
+                    throw new ArgumentException("App assembly is not loaded.");
+
+                //get all dialog services implementation
+                var dialogServices = requestingAssembly
+                    .GetTypes()
+                    .Where(type => !type.IsAbstract && type.GetInterfaces().Contains(typeof(INotificationsService)))
+                    .ToList();
+
+                //check if any dialog services exist in app assembly
+                if (dialogServices.Count == 0)
+                    throw new ArgumentException($"No dialog services registered in app assembly {appAssemblyName}.");
+
+                //get dialog service type, we could check if multiple types found ?
+                var dialogServiceType = dialogServices[0];
+
+                //create instance of dialog service
+                return ActivatorUtilities.CreateInstance(sp, dialogServiceType);
+            });
+
+            //add dialog service by interface
+            services.TryAddSingleton(sp => (INotificationsService)sp.GetRequiredService(typeof(TService)));
+
+            return services;
+        }
+
         #endregion
     }
 }
