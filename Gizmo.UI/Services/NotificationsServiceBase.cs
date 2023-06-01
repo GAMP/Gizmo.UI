@@ -15,8 +15,9 @@ namespace Gizmo.UI.Services
         /// </summary>
         /// <param name="serviceProvider">Service provider.</param>
         /// <param name="logger">Logger.</param>
-        public NotificationsServiceBase(IServiceProvider serviceProvider, ILogger logger)
+        public NotificationsServiceBase( INotificationsHost notificationsHost, IServiceProvider serviceProvider, ILogger logger)
         {
+            _notificationsHost = notificationsHost;
             _serviceProvider = serviceProvider;
             _logger = logger;
 
@@ -29,7 +30,8 @@ namespace Gizmo.UI.Services
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger _logger;
         private readonly GlobalCancellationService _globalCancellationService; 
-        private readonly ConcurrentDictionary<int,NotificationState> _notificationStates;
+        private readonly ConcurrentDictionary<int,NotificationState> _notificationStates = new();
+        private readonly INotificationsHost _notificationsHost;
         #endregion
 
         public event EventHandler<NotificationsChangedArgs>? NotificationsChanged;
