@@ -64,6 +64,11 @@ namespace Gizmo.UI.Services
             None,
             Aknowledged,
         }
+
+        public Task ShowAsync()
+        {
+            return _notificationsHost.ShowAsync();
+        }
     }
 
     public class NotificationsChangedArgs

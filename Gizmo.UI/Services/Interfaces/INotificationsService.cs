@@ -5,5 +5,6 @@
     /// </summary>
     public interface INotificationsService
     {
+        public Task ShowAsync();
     }
 }
