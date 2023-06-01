@@ -31,6 +31,7 @@ namespace Gizmo.UI.Services
         protected HashSet<Assembly> _addtionalAssemblies = new();
         protected Assembly? _appAssembly = default;
         protected Type? _rootComponentType = default;
+        protected Type? _notificationsComponentType = default;
         protected List<UIPageModuleMetadata> _pageModules = new();
         private readonly ILogger _logger;
         private readonly IServiceProvider _serviceProvider;
@@ -58,6 +59,9 @@ namespace Gizmo.UI.Services
 
         /// <inheritdoc/>
         public Type? RootComponentType => _rootComponentType;
+
+        /// <inheritdoc/>
+        public Type? NotificationsComponentType => _notificationsComponentType;
 
         #region PROTECTED
 
@@ -118,6 +122,13 @@ namespace Gizmo.UI.Services
                 return;
             }
 
+            //root component type must be set
+            if (string.IsNullOrWhiteSpace(appConfiguration.NotificationsComponentType))
+            {
+                Logger.LogWarning("Notifications component type is not set, aborting initialization.");
+                return;
+            }
+
             //get external assemblies from the configuration
             string[] externalAssemblies = appConfiguration.AdditionalAssemblies.ToArray();
 
@@ -151,6 +162,9 @@ namespace Gizmo.UI.Services
 
             //get root component type
             _rootComponentType = Type.GetType(appConfiguration.RootComponentType);
+
+            //get notifications component type
+            _notificationsComponentType = Type.GetType(appConfiguration.NotificationsComponentType);
 
             //create list of all assembiles
             var targetAssemblies = AdditionalAssemblies

@@ -228,23 +228,23 @@ namespace Gizmo.UI
                     throw new ArgumentException("App assembly is not loaded.");
 
                 //get all dialog services implementation
-                var dialogServices = requestingAssembly
+                var notificationsService = requestingAssembly
                     .GetTypes()
                     .Where(type => !type.IsAbstract && type.GetInterfaces().Contains(typeof(INotificationsService)))
                     .ToList();
 
                 //check if any dialog services exist in app assembly
-                if (dialogServices.Count == 0)
-                    throw new ArgumentException($"No dialog services registered in app assembly {appAssemblyName}.");
+                if (notificationsService.Count == 0)
+                    throw new ArgumentException($"No notifications services registered in app assembly {appAssemblyName}.");
 
                 //get dialog service type, we could check if multiple types found ?
-                var dialogServiceType = dialogServices[0];
+                var dialogServiceType = notificationsService[0];
 
-                //create instance of dialog service
+                //create instance of notifications service
                 return ActivatorUtilities.CreateInstance(sp, dialogServiceType);
             });
 
-            //add dialog service by interface
+            //add notifications service by interface
             services.TryAddSingleton(sp => (INotificationsService)sp.GetRequiredService(typeof(TService)));
 
             return services;
