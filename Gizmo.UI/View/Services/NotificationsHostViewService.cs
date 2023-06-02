@@ -20,5 +20,24 @@ namespace Gizmo.UI.View.Services
         }
 
         private readonly INotificationsService _notificationsService;
+
+        protected override Task OnInitializing(CancellationToken ct)
+        {
+            _notificationsService.NotificationsChanged += OnNotificationsChanged;
+            return base.OnInitializing(ct);
+        }
+
+        protected override void OnDisposing(bool isDisposing)
+        {
+            _notificationsService.NotificationsChanged -= OnNotificationsChanged;
+            base.OnDisposing(isDisposing);
+        }
+
+        private void OnNotificationsChanged(object? sender, NotificationsChangedArgs e)
+        {
+            ViewState.Visible = _notificationsService.GetVisible();
+            ViewState.Dismissed = _notificationsService.GetDismissed();
+           DebounceViewStateChanged();
+        }
     }
 }
