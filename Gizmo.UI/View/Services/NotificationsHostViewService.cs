@@ -11,10 +11,10 @@ namespace Gizmo.UI.View.Services
     [Register()]
     public sealed class NotificationsHostViewService : ViewStateServiceBase<NotificationsHostViewState>
     {
-        public NotificationsHostViewService(NotificationsHostViewState viewState, 
+        public NotificationsHostViewService(NotificationsHostViewState viewState,
             INotificationsService notificationsService,
             ILogger<NotificationsHostViewService> logger,
-            IServiceProvider serviceProvider) : base(viewState,logger,serviceProvider)
+            IServiceProvider serviceProvider) : base(viewState, logger, serviceProvider)
         {
             _notificationsService = notificationsService;
         }
@@ -37,7 +37,8 @@ namespace Gizmo.UI.View.Services
         {
             ViewState.Visible = _notificationsService.GetVisible();
             ViewState.Dismissed = _notificationsService.GetDismissed();
-           DebounceViewStateChanged();
+
+            DebounceViewStateChanged();
         }
     }
 }
