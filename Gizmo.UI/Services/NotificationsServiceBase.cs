@@ -147,7 +147,7 @@ namespace Gizmo.UI.Services
             //suspend timeout callback
             var suspendTimeoutCallback = (bool suspend) =>
             {
-                TrySuspendTimeout(notificationIdentifier, suspend);
+                TrySuspendTimeOut(notificationIdentifier, suspend);
             };
 
             //user provider token cancellation handler
@@ -188,19 +188,16 @@ namespace Gizmo.UI.Services
             return ShowNotificationAsync<TComponent, EmptyComponentResult>(parameters, displayOptions, addOptions, cancellationToken);
         }
 
-        private async void OnTimerCallback(object? state)
+        private void OnTimerCallback(object? state)
         {
             if (state is NState nState)
             {
                 nState.Timer?.Dispose();
-                await nState.Controller.TimeOutResultAsync();
+                nState.Controller.TimeOutResult();
                 TryTimeOut(nState.Controller.Identifier);
             }
         }
-
-        /// <summary>
-        /// Dismisses all notifications.
-        /// </summary>
+        
         public void DismissAll()
         {
             foreach (var state in _notificationStates)
@@ -235,10 +232,7 @@ namespace Gizmo.UI.Services
         {
             foreach (var state in _notificationStates)
             {
-                if (!TryAcknowledge(state.Key))
-                {
-                    //log
-                }
+                TryAcknowledge(state.Key);               
             }
         }
 
@@ -274,11 +268,11 @@ namespace Gizmo.UI.Services
             return true;
         }
 
-        public void SuspendTimeoutAll()
+        public void SuspendTimeOutAll()
         {
             foreach (var state in _notificationStates)
             {
-                TrySuspendTimeout(state.Key, true);
+                TrySuspendTimeOut(state.Key, true);
             }
         }
 
@@ -286,11 +280,11 @@ namespace Gizmo.UI.Services
         {
             foreach (var state in _notificationStates)
             {
-                TrySuspendTimeout(state.Key, false);
+                TrySuspendTimeOut(state.Key, false);
             }
         }
 
-        public bool TrySuspendTimeout(int notificationId, bool suspend)
+        public bool TrySuspendTimeOut(int notificationId, bool suspend)
         {
             if (!_notificationStates.TryGetValue(notificationId, out var state))
                 return false;
@@ -314,7 +308,10 @@ namespace Gizmo.UI.Services
 
         public IEnumerable<INotificationController> GetVisible()
         {
-            return _notificationStates.Where(x => x.Value.State == NotificationState.Showing)
+            return _notificationStates
+                .OrderBy(x=>x.Value.CreationTime)
+                .ThenByDescending(x => x.Value.AddOptions.Priority)
+                .Where(x => x.Value.State == NotificationState.Showing)
                 .Select(x => x.Value.Controller)
                 .ToList();
         }
@@ -324,6 +321,11 @@ namespace Gizmo.UI.Services
             return _notificationStates.Where(x => x.Value.State != NotificationState.Showing)
                 .Select(x => x.Value.Controller)
                 .ToList();
+        }
+
+        private void RaiseChanged(int notificationId)
+        {
+            NotificationsChanged?.Invoke(this, new NotificationsChangedArgs() {  NotificationId = notificationId });
         }
     }
 }

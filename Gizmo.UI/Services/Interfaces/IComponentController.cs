@@ -41,12 +41,18 @@
         /// </remarks>
         Task DismissAsync();
 
+        /// <inheritdoc cref="DismissAsync"/>
+        void Dismiss();
+
         /// <summary>
         /// Provides custom result.
         /// </summary>
         /// <param name="result">Dialog result.</param>
         /// <exception cref="InvalidCastException">thrown in case result type does not match type of object provided by <paramref name="result"/>.</exception>
         Task ResultAsync(object result);
+
+        /// <inheritdoc cref="ResultAsync(object)"/>
+        void Result(object result);
 
         /// <summary>
         /// Provides default empty result.
@@ -55,6 +61,9 @@
         /// This can be used when component does not provide any custom result in order to signal component closure.
         /// </remarks>
         Task EmptyResultAsync();
+
+        /// <inheritdoc cref="EmptyResultAsync"/>
+        void EmptyResult();
 
         /// <summary>
         /// Provides error.
@@ -65,6 +74,9 @@
         /// </remarks>
         Task ErrorResultAsync(Exception error);
 
+        /// <inheritdoc cref="ErrorResultAsync(Exception)"/>
+        void ErrorResult(Exception error);
+
         /// <summary>
         /// Times out.
         /// </summary>
@@ -73,11 +85,17 @@
         /// </remarks>
         Task TimeOutResultAsync();
 
+        /// <inheritdoc cref="TimeOutResultAsync"/>
+        void TimeOutResult();
+
         /// <summary>
         /// Suspends timeout.
         /// </summary>
         /// <param name="suspend">True or false.</param>
         Task SuspendTimeoutAsync(bool suspend);
+
+        /// <inheritdoc cref="SuspendTimeoutAsync(bool)"/>
+        void SuspendTimeout(bool suspend);
 
         /// <summary>
         /// Used to signal timeout.

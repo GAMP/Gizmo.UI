@@ -14,13 +14,13 @@ namespace Gizmo.UI.Services
             IDictionary<string, object> parameters)
         {
             _componentType = typeof(TComponentType);
-            
+
             _identifier = identifier;
             _parameters = parameters;
             _displayOptions = displayOptions;
 
             //add display options
-            if(displayOptions!=null)
+            if (displayOptions != null)
                 parameters.TryAdd("DisplayOptions", displayOptions);
         }
         #endregion
@@ -30,6 +30,11 @@ namespace Gizmo.UI.Services
         private readonly TDisplayOptions _displayOptions;
         private readonly int _identifier;
         private readonly Type _componentType;
+
+        private Action<Exception>? _error = default;
+        private Action<TResult>? _result = default;
+        private Action<bool>? _suspendTimeout = default;
+
         #endregion
 
         #region PROPERTIES
@@ -84,9 +89,19 @@ namespace Gizmo.UI.Services
             return DismissCallback.InvokeAsync();
         }
 
+        public void Dismiss()
+        {
+            _error?.Invoke(IComponentController.DismissedException);
+        }
+
         public Task ResultAsync(object result)
         {
             return ResultCallback.InvokeAsync((TResult)result);
+        }
+
+        public void Result(object result)
+        {
+            _result?.Invoke((TResult)result);
         }
 
         public Task EmptyResultAsync()
@@ -94,9 +109,19 @@ namespace Gizmo.UI.Services
             return ResultCallback.InvokeAsync((TResult)(object)EmptyComponentResult.Default);
         }
 
+        public void EmptyResult()
+        {
+            _result?.Invoke((TResult)(object)EmptyComponentResult.Default);
+        }
+
         public Task ErrorResultAsync(Exception error)
         {
             return ErrorCallback.InvokeAsync(error);
+        }
+
+        public void ErrorResult(Exception error)
+        {
+            _error?.Invoke(error);
         }
 
         public Task TimeOutResultAsync()
@@ -104,41 +129,47 @@ namespace Gizmo.UI.Services
             return ErrorResultAsync(IComponentController.TimeoutException);
         }
 
+        public void TimeOutResult()
+        {
+            _error?.Invoke(IComponentController.TimeoutException);
+        }
+
         public Task SuspendTimeoutAsync(bool suspend)
         {
             return SuspendTimeoutCallback.InvokeAsync(suspend);
+        }
+
+        public void SuspendTimeout(bool suspend)
+        {
+            _suspendTimeout?.Invoke(suspend);
         }
 
         #endregion
 
         public void CreateCallbacks(Action<TResult> result,
             Action<Exception> error,
-            Action<bool> suspend,
-            IDictionary<string,object> parameters)
+            Action<bool> suspendTimeout,
+            IDictionary<string, object> parameters)
         {
-            //create and add dismiss event callback
-            EventCallback dismissEventCallback = EventCallback.Factory.Create(this, () => 
-            {
-                error(IComponentController.DismissedException);
-            });
+            _error = error;
+            _result = result;
+            _suspendTimeout = suspendTimeout;
 
-            DismissCallback = dismissEventCallback;
-            parameters.TryAdd("DismissCallback", dismissEventCallback);
+            //create and add dismiss event callback
+            DismissCallback = EventCallback.Factory.Create(this, () => { error(IComponentController.DismissedException); });
+            parameters.TryAdd("DismissCallback", DismissCallback);
 
             //create and add result event callback
-            EventCallback<TResult> resultEventCallabck = EventCallback.Factory.Create(this, result);
-            ResultCallback = resultEventCallabck;
-            parameters.TryAdd("ResultCallback", resultEventCallabck);
+            ResultCallback = EventCallback.Factory.Create(this, result);
+            parameters.TryAdd("ResultCallback", ResultCallback);
 
             //create and add error event callback
-            EventCallback<Exception> errorEventCallabck = EventCallback.Factory.Create(this, error);
-            ErrorCallback = errorEventCallabck;
-            parameters.TryAdd("ErrorCallback", errorEventCallabck);
+            ErrorCallback = EventCallback.Factory.Create(this, error);
+            parameters.TryAdd("ErrorCallback", ErrorCallback);
 
             //create and add suspend timeout event callback
-            EventCallback<bool> suspendTimeoutEventCallback = EventCallback.Factory.Create(this, suspend);
-            SuspendTimeoutCallback = suspendTimeoutEventCallback;
-            parameters.TryAdd("SuspendTimeoutCallback", suspendTimeoutEventCallback);
-        }       
+            SuspendTimeoutCallback = EventCallback.Factory.Create(this, suspendTimeout);
+            parameters.TryAdd("SuspendTimeoutCallback", SuspendTimeoutCallback);
+        }
     }
 }
