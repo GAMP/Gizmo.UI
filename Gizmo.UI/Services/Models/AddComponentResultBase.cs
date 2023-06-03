@@ -40,13 +40,22 @@
         /// Waits for dialog result and set Result property.
         /// </summary>
         /// <returns>Task.</returns>
+        /// <exception cref="OperationCanceledException"></exception>
         public async Task<TResult?> WaitForDialogResultAsync(CancellationToken cancellationToken = default)
         {
             return await _task.ContinueWith(task =>
             {
                 if (task.IsFaulted)
                 {
-                    Result = AddComponentResultCode.Failed;
+                    if(task.Exception?.GetBaseException() is TimeoutException)
+                    {
+                        Result = AddComponentResultCode.TimeOut;
+                    }
+                    else
+                    {
+                        Result = AddComponentResultCode.Failed;
+                    }
+                    
                     return null;
                 }
                 else if (task.IsCompletedSuccessfully)

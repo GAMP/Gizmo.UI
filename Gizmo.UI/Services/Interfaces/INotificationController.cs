@@ -8,6 +8,6 @@
         /// <summary>
         /// Gets notification display options.
         /// </summary>
-        public NotificationDisplayOptions DisplayOptions { get; }
+        public NotificationDisplayOptions DisplayOptions { get; }       
     }
 }

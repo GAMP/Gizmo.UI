@@ -8,7 +8,6 @@
         public event EventHandler<NotificationsChangedArgs>? NotificationsChanged;
         IEnumerable<INotificationController> GetVisible();
         IEnumerable<INotificationController> GetDismissed();
-        public Task ShowAsync();
         void TryDismissAll();
     }
 }

@@ -23,6 +23,10 @@
         /// <summary>
         /// Component was not added.
         /// </summary>
-        Failed
+        Failed,
+        /// <summary>
+        /// Component timed out.
+        /// </summary>
+        TimeOut,
     }
 }

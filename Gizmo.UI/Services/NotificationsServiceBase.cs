@@ -16,9 +16,8 @@ namespace Gizmo.UI.Services
         /// </summary>
         /// <param name="serviceProvider">Service provider.</param>
         /// <param name="logger">Logger.</param>
-        public NotificationsServiceBase(INotificationsHost notificationsHost, IServiceProvider serviceProvider, ILogger logger)
+        public NotificationsServiceBase(IServiceProvider serviceProvider, ILogger logger)
         {
-            _notificationsHost = notificationsHost;
             _serviceProvider = serviceProvider;
             _logger = logger;
 
@@ -35,14 +34,13 @@ namespace Gizmo.UI.Services
         private readonly ILogger _logger;
         private readonly GlobalCancellationService _globalCancellationService;
         private readonly ConcurrentDictionary<int, NState> _notificationStates = new();
-        private readonly INotificationsHost _notificationsHost;
         private int _dialogIdentifierCounter = 0;
 
         #endregion
 
         #region LOCAL
 
-        private class NState
+        private class NState : IDisposable
         {
             public NState(INotificationController notificationController, NotificationAddOptions addOptions)
             {
@@ -75,14 +73,19 @@ namespace Gizmo.UI.Services
             /// Gets controller.
             /// </summary>
             public INotificationController Controller { get; init; }
+
+            /// <summary>
+            /// Optional timeout timer.
+            /// </summary>
+            public Timer? Timer { get; set; }
+
+            public void Dispose()
+            {
+                Timer?.Dispose();
+            }
         }
 
         #endregion
-
-        public Task ShowAsync()
-        {
-            return _notificationsHost.ShowAsync();
-        }
 
         public virtual Task<AddNotificationResult<TResult>> ShowNotificationAsync<TComponent, TResult>(IDictionary<string, object> parameters,
             NotificationDisplayOptions? displayOptions = null,
@@ -118,7 +121,6 @@ namespace Gizmo.UI.Services
             var cancelCallback = () =>
             {
                 TryDismiss(notificationIdentifier);
-                _logger.LogTrace("Cancelling dialog ({dialogId}).", notificationIdentifier);
                 completionSource.TrySetCanceled();
             };
 
@@ -126,8 +128,14 @@ namespace Gizmo.UI.Services
             var resultCallback = (TResult result) =>
             {
                 TryAcknowledge(notificationIdentifier);
-                _logger.LogTrace("Setting dialog ({dialogId}) result, result {result}.", notificationIdentifier, result);
                 completionSource.TrySetResult(result);
+            };
+
+            //error callback
+            var errorCallback = (Exception error) =>
+            {
+                TryAcknowledge(notificationIdentifier);
+                completionSource.TrySetException(error);
             };
 
             //user provider token cancellation handler
@@ -144,6 +152,10 @@ namespace Gizmo.UI.Services
             EventCallback<TResult> resultEventCallabck = EventCallback.Factory.Create(this, resultCallback);
             parameters.TryAdd("ResultCallback", resultEventCallabck);
 
+            //create and add error event callback
+            EventCallback<Exception> errorEventCallabck = EventCallback.Factory.Create(this, errorCallback);
+            parameters.TryAdd("ErrorCallback", resultEventCallabck);
+
             //add display options
             parameters.TryAdd("DisplayOptions", displayOptions);
 
@@ -155,12 +167,20 @@ namespace Gizmo.UI.Services
                 {
                     CancelCallback = cancelEventCallback,
                     ResultCallback = resultEventCallabck,
+                    ErrorCallback = errorEventCallabck,
                     Identifier = notificationIdentifier
                 };
 
                 //create state
                 return new NState(controller, addOptions);
             });
+
+            //check if timeout is not null and greater than zero
+            //negative value means infinite timeout
+            if (addOptions.Timeout > 0)
+            {
+                state.Timer = new Timer(OnTimerCallback, state, TimeSpan.FromSeconds(addOptions.Timeout.Value), Timeout.InfiniteTimeSpan);
+            }
 
             //notify of change
             NotificationsChanged?.Invoke(this, new NotificationsChangedArgs() { NotificationId = notificationIdentifier });
@@ -171,8 +191,6 @@ namespace Gizmo.UI.Services
                 Controller = state.Controller,
             };
 
-            _= _notificationsHost.ShowAsync();
-
             return Task.FromResult(result);
         }
 
@@ -182,6 +200,16 @@ namespace Gizmo.UI.Services
            CancellationToken cancellationToken = default) where TComponent : ComponentBase, new()
         {
             return ShowNotificationAsync<TComponent, EmptyComponentResult>(parameters, displayOptions, addOptions, cancellationToken);
+        }
+
+        private async void OnTimerCallback(object? state)
+        {
+            if (state is NState nState)
+            {
+                nState.Timer?.Dispose();               
+                await nState.Controller.TimeOutResultAsync();
+                TryTimeOut(nState.Controller.Identifier);
+            }
         }
 
         /// <summary>
@@ -212,7 +240,7 @@ namespace Gizmo.UI.Services
             else
             {
                 TryAcknowledge(notificationId);
-            }          
+            }
 
             return true;
         }
@@ -224,16 +252,7 @@ namespace Gizmo.UI.Services
 
             NotificationsChanged?.Invoke(this, new NotificationsChangedArgs() { NotificationId = notificationId });
 
-            //get visible notifications count
-            var currentCount = _notificationStates.Where(x => x.Value.State == NotificationState.Showing).Count();
-
-            if (currentCount <= 0)
-            {
-                _ = _notificationsHost.HideAsyc();
-            }
-
             return true;
-
         }
 
         public bool TryTimeOut(int notificationId)
@@ -244,14 +263,15 @@ namespace Gizmo.UI.Services
             if (state.State == NotificationState.Showing && !state.AddOptions.NotificationAckOptions.HasFlag(NotificationAckOptions.TimeOut))
             {
                 state.State = NotificationState.TimedOut;
+                //notify
+                NotificationsChanged?.Invoke(this, new NotificationsChangedArgs() { NotificationId = notificationId });
             }
             else
             {
-                _notificationStates.TryRemove(notificationId, out state);
+                TryAcknowledge(notificationId);
             }
 
-            //notify
-            NotificationsChanged?.Invoke(this, new NotificationsChangedArgs() { NotificationId = notificationId });
+
 
             return true;
         }
@@ -265,13 +285,11 @@ namespace Gizmo.UI.Services
                     //log
                 }
             }
-
-           
         }
 
         public IEnumerable<INotificationController> GetVisible()
         {
-            return _notificationStates.Where(x=> x.Value.State == NotificationState.Showing).Select(x=>x.Value.Controller).ToList();
+            return _notificationStates.Where(x => x.Value.State == NotificationState.Showing).Select(x => x.Value.Controller).ToList();
         }
 
         public IEnumerable<INotificationController> GetDismissed()

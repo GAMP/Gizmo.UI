@@ -13,7 +13,7 @@
         /// Set to null to use default value.<br></br>
         /// Set to -1 to use infinite timeout.<br></br>
         /// </remarks>
-        public int? Timeout { get; init; }
+        public int? Timeout { get; init; } = 5;
 
         /// <summary>
         /// Gets notification priority.

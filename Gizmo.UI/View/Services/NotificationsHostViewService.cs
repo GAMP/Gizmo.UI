@@ -38,7 +38,7 @@ namespace Gizmo.UI.View.Services
             ViewState.Visible = _notificationsService.GetVisible();
             ViewState.Dismissed = _notificationsService.GetDismissed();
 
-            DebounceViewStateChanged();
+            RaiseViewStateChanged();
         }
     }
 }
