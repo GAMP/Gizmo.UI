@@ -20,7 +20,8 @@
         /// 1) CancelCallback (EventCallback)<br></br>
         /// 2) ResultCallback (EventCallback[T]) where T will be eqault to <see cref="EmptyComponentResult"/> for dialogs without custom result or to any other custom result return type depending on dialog implementation.<br></br>
         /// 3) ErrorCallback  (EventCallback[Exception])<br></br>
-        /// 3) DisplayOptions (<see cref="DialogDisplayOptions"/>)<br></br>
+        /// 4) SuspendTimeoutCallback  (EventCallback[Exception])<br></br>
+        /// 5) DisplayOptions (<see cref="DialogDisplayOptions"/>)<br></br>
         /// </remarks>
         IDictionary<string, object> Parameters { get; }
 
@@ -64,6 +65,18 @@
         /// <summary>
         /// Times out.
         /// </summary>
+        /// <remarks>
+        /// Signals timeout by providing <see cref="TimeoutException"/> to <see cref="ErrorResultAsync(Exception)"/>.
+        /// </remarks>
         Task TimeOutResultAsync();
+
+        /// <summary>
+        /// Suspends timeout.
+        /// </summary>
+        /// <param name="suspend">True or false.</param>
+        Task SuspendTimeoutAsync(bool suspend);
+
+        public static readonly Exception TimeoutException = new();
+        public static readonly Exception DismissedException = new();
     }
 }

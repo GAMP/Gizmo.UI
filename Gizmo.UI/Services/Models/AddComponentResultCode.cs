@@ -17,7 +17,7 @@
         /// </summary>
         Ok,
         /// <summary>
-        /// Component was closed without result.
+        /// Component was canceld by one of cancellation tokens without result.
         /// </summary>
         Canceled,
         /// <summary>
@@ -28,5 +28,9 @@
         /// Component timed out.
         /// </summary>
         TimeOut,
+        /// <summary>
+        /// Component was dismissed without result.
+        /// </summary>
+        Dismissed,
     }
 }

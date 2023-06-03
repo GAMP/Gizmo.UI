@@ -72,7 +72,7 @@ namespace Gizmo.UI.Services
 
             //if not return the result with null task completion source (Task.CompletedTask), this will make any await calls to complete instantly
             if (dialogResult != AddComponentResultCode.Opened)
-                return Task.FromResult(new AddDialogResult<TResult>(dialogResult, default));
+                return Task.FromResult(new AddDialogResult<TResult>(dialogResult, default, default));
 
             //create new dialog identifier, right now we use int, this could be a string or any other key value.
             //this will give a dialog an unique id that we can capture in anonymous functions
@@ -97,30 +97,29 @@ namespace Gizmo.UI.Services
                 TryRemove(dialogIdentifier);
             };
 
+            //error callback
+            var errorCallback = (Exception error) =>
+            {
+            };
+
+            //suspend timeout callback
+            var suspendTimeoutCallback = (bool suspend) =>
+            {
+            };
+
             //user provider token cancellation handler
             cancellationToken.Register(() =>
             {
                 cancelCallback();
             });
 
-            //create and add cancel event callback
-            EventCallback cancelEventCallback = EventCallback.Factory.Create(this, cancelCallback);
-            parameters.TryAdd("CancelCallback", cancelEventCallback);
-
-            //create and add result event callback
-            EventCallback<TResult> resultEventCallabck = EventCallback.Factory.Create(this, resultCallback);
-            parameters.TryAdd("ResultCallback", resultEventCallabck);
-
-            //add display options
-            parameters.TryAdd("DisplayOptions", displayOptions);
-
             //create dialog controller and pass the parameters
-            var dialogController = _dialogLookup.GetOrAdd(dialogIdentifier, (id) => new DialogController<TComponent, TResult>(displayOptions, parameters)
+            var dialogController = _dialogLookup.GetOrAdd(dialogIdentifier, (id) =>
             {
-                CancelCallback = cancelEventCallback,
-                ResultCallback = resultEventCallabck,
-                Identifier = dialogIdentifier
-            });
+                var controller = new DialogController<TComponent, TResult>(dialogIdentifier, displayOptions, parameters);
+                controller.CreateCallbacks(resultCallback, errorCallback, cancelCallback, suspendTimeoutCallback, parameters);
+                return controller;
+            });             
 
             //add dialog to the queue
             _dialogQueue.Enqueue(dialogController);
@@ -129,10 +128,7 @@ namespace Gizmo.UI.Services
             DialogChanged?.Invoke(this, EventArgs.Empty);
 
             //return dialog result
-            var result = new AddDialogResult<TResult>(dialogResult, completionSource)
-            {
-                Controller = dialogController,
-            };
+            var result = new AddDialogResult<TResult>(dialogResult, dialogController, completionSource);
 
             return Task.FromResult(result);
         }
@@ -174,7 +170,7 @@ namespace Gizmo.UI.Services
         private bool TryRemove(IDialogController componentDialog)
         {
             if (componentDialog == null)
-                throw new ArgumentException(nameof(componentDialog));
+                throw new ArgumentException(null, nameof(componentDialog));
 
             if (_dialogQueue.TryDequeue(out _))
             {

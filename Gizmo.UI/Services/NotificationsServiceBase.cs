@@ -42,10 +42,13 @@ namespace Gizmo.UI.Services
 
         private class NState : IDisposable
         {
-            public NState(INotificationController notificationController, NotificationAddOptions addOptions)
+            public NState(INotificationController notificationController, 
+                NotificationAddOptions addOptions, 
+                Action cancel)
             {
                 Controller = notificationController;
                 AddOptions = addOptions;
+                CancelDelegate = cancel;
             }
 
             public NotificationAddOptions AddOptions
@@ -79,6 +82,8 @@ namespace Gizmo.UI.Services
             /// </summary>
             public Timer? Timer { get; set; }
 
+            public Action CancelDelegate { get;  }
+
             public void Dispose()
             {
                 Timer?.Dispose();
@@ -108,7 +113,7 @@ namespace Gizmo.UI.Services
 
             //if not return the result with null task completion source (Task.CompletedTask), this will make any await calls to complete instantly
             if (dialogResult != AddComponentResultCode.Opened)
-                return Task.FromResult(new AddNotificationResult<TResult>(dialogResult, default));
+                return Task.FromResult(new AddNotificationResult<TResult>(dialogResult,default, default));
 
             //create new notification identifier, right now we use int, this could be a string or any other key value.
             //this will give a dialog an unique id that we can capture in anonymous functions
@@ -121,7 +126,7 @@ namespace Gizmo.UI.Services
             var cancelCallback = () =>
             {
                 TryDismiss(notificationIdentifier);
-                completionSource.TrySetCanceled();
+                completionSource.TrySetException(IComponentController.DismissedException);
             };
 
             //result callback handler
@@ -138,41 +143,25 @@ namespace Gizmo.UI.Services
                 completionSource.TrySetException(error);
             };
 
+            //suspend timeout callback
+            var suspendTimeoutCallback = (bool suspend) =>
+            {
+                TrySuspendTimeout(notificationIdentifier, suspend);
+            };
+
             //user provider token cancellation handler
             cancellationToken.Register(() =>
             {
-                cancelCallback();
+                TryDismiss(notificationIdentifier);
+                completionSource.TrySetCanceled();
             });
-
-            //create and add cancel event callback
-            EventCallback cancelEventCallback = EventCallback.Factory.Create(this, cancelCallback);
-            parameters.TryAdd("CancelCallback", cancelEventCallback);
-
-            //create and add result event callback
-            EventCallback<TResult> resultEventCallabck = EventCallback.Factory.Create(this, resultCallback);
-            parameters.TryAdd("ResultCallback", resultEventCallabck);
-
-            //create and add error event callback
-            EventCallback<Exception> errorEventCallabck = EventCallback.Factory.Create(this, errorCallback);
-            parameters.TryAdd("ErrorCallback", resultEventCallabck);
-
-            //add display options
-            parameters.TryAdd("DisplayOptions", displayOptions);
 
             //create dialog controller and pass the parameters
             var state = _notificationStates.GetOrAdd(notificationIdentifier, (id) =>
             {
-                //create controller
-                var controller = new NotificationController<TComponent, TResult>(displayOptions, parameters)
-                {
-                    CancelCallback = cancelEventCallback,
-                    ResultCallback = resultEventCallabck,
-                    ErrorCallback = errorEventCallabck,
-                    Identifier = notificationIdentifier
-                };
-
-                //create state
-                return new NState(controller, addOptions);
+                var controller = new NotificationController<TComponent, TResult>(notificationIdentifier, displayOptions, parameters);
+                controller.CreateCallbacks(resultCallback, errorCallback, cancelCallback, suspendTimeoutCallback, parameters);
+                return new NState(controller, addOptions,cancelCallback);
             });
 
             //check if timeout is not null and greater than zero
@@ -186,11 +175,7 @@ namespace Gizmo.UI.Services
             NotificationsChanged?.Invoke(this, new NotificationsChangedArgs() { NotificationId = notificationIdentifier });
 
             //return dialog result
-            var result = new AddNotificationResult<TResult>(dialogResult, completionSource)
-            {
-                Controller = state.Controller,
-            };
-
+            var result = new AddNotificationResult<TResult>(dialogResult, state.Controller, completionSource);
             return Task.FromResult(result);
         }
 
@@ -206,7 +191,7 @@ namespace Gizmo.UI.Services
         {
             if (state is NState nState)
             {
-                nState.Timer?.Dispose();               
+                nState.Timer?.Dispose();
                 await nState.Controller.TimeOutResultAsync();
                 TryTimeOut(nState.Controller.Identifier);
             }
@@ -250,6 +235,9 @@ namespace Gizmo.UI.Services
             if (!_notificationStates.TryRemove(notificationId, out var state))
                 return false;
 
+            //dispose state
+            state.Dispose();
+
             NotificationsChanged?.Invoke(this, new NotificationsChangedArgs() { NotificationId = notificationId });
 
             return true;
@@ -271,6 +259,26 @@ namespace Gizmo.UI.Services
                 TryAcknowledge(notificationId);
             }
 
+            return true;
+        }
+
+        public bool TrySuspendTimeout(int notificationId, bool suspend)
+        {
+            if (!_notificationStates.TryGetValue(notificationId, out var state))
+                return false;
+
+            if (state.Timer == null)
+                return false;
+
+            if (!suspend)
+            {
+                if (state.AddOptions.Timeout > 0)
+                    state.Timer.Change(TimeSpan.FromSeconds(state.AddOptions.Timeout.Value), Timeout.InfiniteTimeSpan);
+            }
+            else
+            {
+                state.Timer.Change(Timeout.Infinite, Timeout.Infinite);
+            }
 
 
             return true;
@@ -289,12 +297,16 @@ namespace Gizmo.UI.Services
 
         public IEnumerable<INotificationController> GetVisible()
         {
-            return _notificationStates.Where(x => x.Value.State == NotificationState.Showing).Select(x => x.Value.Controller).ToList();
+            return _notificationStates.Where(x => x.Value.State == NotificationState.Showing)
+                .Select(x => x.Value.Controller)
+                .ToList();
         }
 
         public IEnumerable<INotificationController> GetDismissed()
         {
-            return _notificationStates.Where(x => x.Value.State != NotificationState.Showing).Select(x => x.Value.Controller).ToList();
+            return _notificationStates.Where(x => x.Value.State != NotificationState.Showing)
+                .Select(x => x.Value.Controller)
+                .ToList();
         }
     }
 }

@@ -18,8 +18,8 @@ namespace Gizmo.UI.Services
         /// Creates new instance.
         /// </summary>
         /// <param name="componentType">Component type.</param>
-        public NotificationController(NotificationDisplayOptions displayOptions,
-            IDictionary<string, object> parameters) : base(displayOptions, parameters)
+        public NotificationController(int identifier, NotificationDisplayOptions displayOptions,
+            IDictionary<string, object> parameters) : base(identifier, displayOptions, parameters)
         {
         }
         #endregion
