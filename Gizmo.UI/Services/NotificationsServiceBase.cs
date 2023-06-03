@@ -130,18 +130,17 @@ namespace Gizmo.UI.Services
             {
                 if (error == IComponentController.TimeoutException)
                 {
-                    //timed out
+                    TryTimeOut(notificationIdentifier);
                 }
                 else if(error == IComponentController.DismissedException)
                 {
-                    //dismissed
+                    TryDismiss(notificationIdentifier);
                 }
                 else
                 {
-                    //error
+                    TryAcknowledge(notificationIdentifier);
                 }
-
-                TryAcknowledge(notificationIdentifier);
+                
                 completionSource.TrySetException(error);
             };
 
@@ -202,7 +201,7 @@ namespace Gizmo.UI.Services
         /// <summary>
         /// Dismisses all notifications.
         /// </summary>
-        public void TryDismissAll()
+        public void DismissAll()
         {
             foreach (var state in _notificationStates)
             {
@@ -230,6 +229,17 @@ namespace Gizmo.UI.Services
             }
 
             return true;
+        }
+
+        public void AcknowledgeAll()
+        {
+            foreach (var state in _notificationStates)
+            {
+                if (!TryAcknowledge(state.Key))
+                {
+                    //log
+                }
+            }
         }
 
         public bool TryAcknowledge(int notificationId)
@@ -264,6 +274,22 @@ namespace Gizmo.UI.Services
             return true;
         }
 
+        public void SuspendTimeoutAll()
+        {
+            foreach (var state in _notificationStates)
+            {
+                TrySuspendTimeout(state.Key, true);
+            }
+        }
+
+        public void ResumeTimeOutAll()
+        {
+            foreach (var state in _notificationStates)
+            {
+                TrySuspendTimeout(state.Key, false);
+            }
+        }
+
         public bool TrySuspendTimeout(int notificationId, bool suspend)
         {
             if (!_notificationStates.TryGetValue(notificationId, out var state))
@@ -284,18 +310,7 @@ namespace Gizmo.UI.Services
 
 
             return true;
-        }
-
-        public void TryAcknowledgeAll()
-        {
-            foreach (var state in _notificationStates)
-            {
-                if (!TryAcknowledge(state.Key))
-                {
-                    //log
-                }
-            }
-        }
+        } 
 
         public IEnumerable<INotificationController> GetVisible()
         {
