@@ -8,7 +8,7 @@ namespace Gizmo.UI.Services
     public abstract class DialogServiceComponentBase : ComponentBase
     {
         [Parameter]
-        public EventCallback CancelCallback { get; set; }
+        public EventCallback DismissCallback { get; set; }
 
         [Parameter]
         public EventCallback<EmptyComponentResult> ResultCallback { get; set; }
