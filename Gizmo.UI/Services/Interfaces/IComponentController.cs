@@ -34,9 +34,12 @@
         public int Identifier { get; }
 
         /// <summary>
-        /// Initiates cancellation.
+        /// Dismiss component.
         /// </summary>
-        Task CancelAsync();
+        /// <remarks>
+        /// Signals dismiss by providing <see cref="IComponentController.DismissedException"/> to <see cref="ErrorResultAsync(Exception)"/>.
+        /// </remarks>
+        Task DismissAsync();
 
         /// <summary>
         /// Provides custom result.
@@ -66,7 +69,7 @@
         /// Times out.
         /// </summary>
         /// <remarks>
-        /// Signals timeout by providing <see cref="TimeoutException"/> to <see cref="ErrorResultAsync(Exception)"/>.
+        /// Signals timeout by providing <see cref="IComponentController.TimeoutException"/> to <see cref="ErrorResultAsync(Exception)"/>.
         /// </remarks>
         Task TimeOutResultAsync();
 

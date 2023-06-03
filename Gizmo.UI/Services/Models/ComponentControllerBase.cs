@@ -79,7 +79,7 @@ namespace Gizmo.UI.Services
 
         #region FUNCTIONS
 
-        public Task CancelAsync()
+        public Task DismissAsync()
         {
             return CancelCallback.InvokeAsync();
         }
