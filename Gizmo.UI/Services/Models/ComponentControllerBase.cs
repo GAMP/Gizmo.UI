@@ -55,9 +55,9 @@ namespace Gizmo.UI.Services
         }
 
         /// <summary>
-        /// Gets cancel callback.
+        /// Gets dismiss callback.
         /// </summary>
-        private EventCallback CancelCallback { get; set; }
+        private EventCallback DismissCallback { get; set; }
 
         /// <summary>
         /// Gets result callback.
@@ -81,7 +81,7 @@ namespace Gizmo.UI.Services
 
         public Task DismissAsync()
         {
-            return CancelCallback.InvokeAsync();
+            return DismissCallback.InvokeAsync();
         }
 
         public Task ResultAsync(object result)
@@ -113,14 +113,17 @@ namespace Gizmo.UI.Services
 
         public void CreateCallbacks(Action<TResult> result,
             Action<Exception> error,
-            Action cancel,
             Action<bool> suspend,
             IDictionary<string,object> parameters)
         {
-            //create and add cancel event callback
-            EventCallback cancelEventCallback = EventCallback.Factory.Create(this, cancel);
-            CancelCallback = cancelEventCallback;
-            parameters.TryAdd("CancelCallback", cancelEventCallback);
+            //create and add dismiss event callback
+            EventCallback dismissEventCallback = EventCallback.Factory.Create(this, () => 
+            {
+                error(IComponentController.DismissedException);
+            });
+
+            DismissCallback = dismissEventCallback;
+            parameters.TryAdd("DismissCallback", dismissEventCallback);
 
             //create and add result event callback
             EventCallback<TResult> resultEventCallabck = EventCallback.Factory.Create(this, result);
@@ -136,8 +139,6 @@ namespace Gizmo.UI.Services
             EventCallback<bool> suspendTimeoutEventCallback = EventCallback.Factory.Create(this, suspend);
             SuspendTimeoutCallback = suspendTimeoutEventCallback;
             parameters.TryAdd("SuspendTimeoutCallback", suspendTimeoutEventCallback);
-        }
-
-       
+        }       
     }
 }

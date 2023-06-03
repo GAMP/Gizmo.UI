@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -81,14 +82,6 @@ namespace Gizmo.UI.Services
             //create completion source
             var completionSource = new TaskCompletionSource<TResult>();
 
-            //cancel callback handler
-            var cancelCallback = () =>
-            {
-                _logger.LogTrace("Cancelling dialog ({dialogId}).", dialogIdentifier);
-                completionSource.TrySetCanceled();
-                TryRemove(dialogIdentifier);
-            };
-
             //result callback handler
             var resultCallback = (TResult result) =>
             {
@@ -99,25 +92,29 @@ namespace Gizmo.UI.Services
 
             //error callback
             var errorCallback = (Exception error) =>
-            {
+            {               
+                _logger.LogTrace("Cancelling dialog ({dialogId}).", dialogIdentifier);
+                completionSource.TrySetException(error);
+                TryRemove(dialogIdentifier);
             };
 
             //suspend timeout callback
             var suspendTimeoutCallback = (bool suspend) =>
             {
+                //suspend timeout here
             };
 
             //user provider token cancellation handler
             cancellationToken.Register(() =>
             {
-                cancelCallback();
+                completionSource.TrySetCanceled();
             });
 
             //create dialog controller and pass the parameters
             var dialogController = _dialogLookup.GetOrAdd(dialogIdentifier, (id) =>
             {
                 var controller = new DialogController<TComponent, TResult>(dialogIdentifier, displayOptions, parameters);
-                controller.CreateCallbacks(resultCallback, errorCallback, cancelCallback, suspendTimeoutCallback, parameters);
+                controller.CreateCallbacks(resultCallback, errorCallback, suspendTimeoutCallback, parameters);
                 return controller;
             });             
 

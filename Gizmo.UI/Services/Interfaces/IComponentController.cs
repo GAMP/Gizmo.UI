@@ -17,10 +17,10 @@
         /// This parameter passed to <see cref="Microsoft.AspNetCore.Components.DynamicComponent.Parameters"/>.<br></br>
         /// This dictonary will always contain following values <br></br>
         /// <br></br>
-        /// 1) CancelCallback (EventCallback)<br></br>
+        /// 1) DismissCallback (EventCallback)<br></br>
         /// 2) ResultCallback (EventCallback[T]) where T will be eqault to <see cref="EmptyComponentResult"/> for dialogs without custom result or to any other custom result return type depending on dialog implementation.<br></br>
-        /// 3) ErrorCallback  (EventCallback[Exception])<br></br>
-        /// 4) SuspendTimeoutCallback  (EventCallback[Exception])<br></br>
+        /// 3) ErrorCallback (EventCallback[Exception])<br></br>
+        /// 4) SuspendTimeoutCallback (EventCallback[Exception])<br></br>
         /// 5) DisplayOptions (<see cref="DialogDisplayOptions"/>)<br></br>
         /// </remarks>
         IDictionary<string, object> Parameters { get; }
@@ -79,7 +79,13 @@
         /// <param name="suspend">True or false.</param>
         Task SuspendTimeoutAsync(bool suspend);
 
+        /// <summary>
+        /// Used to signal timeout.
+        /// </summary>
         public static readonly Exception TimeoutException = new();
+        /// <summary>
+        /// Used to signal dismiss.
+        /// </summary>
         public static readonly Exception DismissedException = new();
     }
 }

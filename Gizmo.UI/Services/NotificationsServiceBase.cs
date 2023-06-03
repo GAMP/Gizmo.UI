@@ -43,12 +43,10 @@ namespace Gizmo.UI.Services
         private class NState : IDisposable
         {
             public NState(INotificationController notificationController, 
-                NotificationAddOptions addOptions, 
-                Action cancel)
+                NotificationAddOptions addOptions)
             {
                 Controller = notificationController;
                 AddOptions = addOptions;
-                CancelDelegate = cancel;
             }
 
             public NotificationAddOptions AddOptions
@@ -81,8 +79,6 @@ namespace Gizmo.UI.Services
             /// Optional timeout timer.
             /// </summary>
             public Timer? Timer { get; set; }
-
-            public Action CancelDelegate { get;  }
 
             public void Dispose()
             {
@@ -120,14 +116,7 @@ namespace Gizmo.UI.Services
             var notificationIdentifier = Interlocked.Add(ref _dialogIdentifierCounter, 1);
 
             //create completion source
-            var completionSource = new TaskCompletionSource<TResult>();
-
-            //cancel callback handler
-            var cancelCallback = () =>
-            {
-                TryDismiss(notificationIdentifier);
-                completionSource.TrySetException(IComponentController.DismissedException);
-            };
+            var completionSource = new TaskCompletionSource<TResult>(); 
 
             //result callback handler
             var resultCallback = (TResult result) =>
@@ -139,6 +128,19 @@ namespace Gizmo.UI.Services
             //error callback
             var errorCallback = (Exception error) =>
             {
+                if (error == IComponentController.TimeoutException)
+                {
+                    //timed out
+                }
+                else if(error == IComponentController.DismissedException)
+                {
+                    //dismissed
+                }
+                else
+                {
+                    //error
+                }
+
                 TryAcknowledge(notificationIdentifier);
                 completionSource.TrySetException(error);
             };
@@ -160,8 +162,8 @@ namespace Gizmo.UI.Services
             var state = _notificationStates.GetOrAdd(notificationIdentifier, (id) =>
             {
                 var controller = new NotificationController<TComponent, TResult>(notificationIdentifier, displayOptions, parameters);
-                controller.CreateCallbacks(resultCallback, errorCallback, cancelCallback, suspendTimeoutCallback, parameters);
-                return new NState(controller, addOptions,cancelCallback);
+                controller.CreateCallbacks(resultCallback, errorCallback, suspendTimeoutCallback, parameters);
+                return new NState(controller, addOptions);
             });
 
             //check if timeout is not null and greater than zero
