@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Gizmo.UI.Services
 {
@@ -16,8 +17,11 @@ namespace Gizmo.UI.Services
         /// </summary>
         /// <param name="serviceProvider">Service provider.</param>
         /// <param name="logger">Logger.</param>
-        public NotificationsServiceBase(IServiceProvider serviceProvider, ILogger logger)
+        public NotificationsServiceBase( IOptionsMonitor<NotificationsOptions> options,
+            IServiceProvider serviceProvider,
+            ILogger logger)
         {
+            _options = options;
             _serviceProvider = serviceProvider;
             _logger = logger;
 
@@ -30,11 +34,13 @@ namespace Gizmo.UI.Services
 
         public event EventHandler<NotificationsChangedArgs>? NotificationsChanged;
 
+        private readonly IOptionsMonitor<NotificationsOptions> _options;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger _logger;
         private readonly GlobalCancellationService _globalCancellationService;
         private readonly ConcurrentDictionary<int, NState> _notificationStates = new();
         private int _dialogIdentifierCounter = 0;
+        private const int DEFAULT_NOTIFICATION_TIMEOUT = 5;
 
         #endregion
 
@@ -98,8 +104,20 @@ namespace Gizmo.UI.Services
 
             //create default display options if none provided
             displayOptions ??= new();
+
             //create default add options if none provided
             addOptions ??= new();
+
+            //check if timeout value specified
+            if(!addOptions.Timeout.HasValue)
+            {
+                var configuredTimeOutValue = _options.CurrentValue.DefaultTimeout;
+                if(configuredTimeOutValue == null)
+                {
+                    //use default timeout value if none provided
+                    addOptions.Timeout = DEFAULT_NOTIFICATION_TIMEOUT;
+                }
+            }
 
             // 1) check parameters
             // 2) confirm that based on parameters dialog can be added
@@ -194,7 +212,6 @@ namespace Gizmo.UI.Services
             {
                 nState.Timer?.Dispose();
                 nState.Controller.TimeOutResult();
-                TryTimeOut(nState.Controller.Identifier);
             }
         }
         

@@ -13,7 +13,7 @@
         /// Set to null to use default value.<br></br>
         /// Set to -1 to use infinite timeout.<br></br>
         /// </remarks>
-        public int? Timeout { get; init; } = 5;
+        public int? Timeout { get; internal set; } = null;
 
         /// <summary>
         /// Gets notification priority.
@@ -26,6 +26,6 @@
         public NotificationAckOptions NotificationAckOptions
         {
             get; init;
-        } = NotificationAckOptions.Dismiss;
+        } = NotificationAckOptions.Dismiss | NotificationAckOptions.TimeOut;
     }
 }

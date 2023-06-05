@@ -64,11 +64,11 @@
 
                     if(baseExcption == IComponentController.DismissedException)
                     {
-                        _result = AddComponentResultCode.TimeOut;
+                        _result = AddComponentResultCode.Dismissed;
                     }
                     else if(baseExcption == IComponentController.TimeoutException)
                     {
-                        _result = AddComponentResultCode.Dismissed;
+                        _result = AddComponentResultCode.TimeOut;
                     }
                     else
                     {

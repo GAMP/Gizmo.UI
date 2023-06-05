@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Gizmo.UI.Services
 {
@@ -18,8 +19,11 @@ namespace Gizmo.UI.Services
         /// </summary>
         /// <param name="serviceProvider">Service provider.</param>
         /// <param name="logger">Logger.</param>
-        public DialogServiceBase(IServiceProvider serviceProvider, ILogger logger)
+        public DialogServiceBase(IOptionsMonitor<DialogOptions> options,
+            IServiceProvider serviceProvider, 
+            ILogger logger)
         {
+            _options = options;
             _serviceProvider = serviceProvider;
             _logger = logger;
 
@@ -30,6 +34,7 @@ namespace Gizmo.UI.Services
 
         #region FIELDS
         public event EventHandler<EventArgs>? DialogChanged;
+        private readonly IOptionsMonitor<DialogOptions> _options;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger _logger;
         private readonly ConcurrentQueue<IDialogController> _dialogQueue = new();
