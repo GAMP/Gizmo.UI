@@ -92,6 +92,7 @@ namespace Gizmo.UI.Services
             {
                 GC.SuppressFinalize(this);
                 Timer?.Dispose();
+                Timer = null;
             }
         }
 
@@ -218,7 +219,7 @@ namespace Gizmo.UI.Services
             if (state is NState nState)
             {
                 nState.Timer?.Dispose();
-                nState.Controller.TimeOutResult();
+                nState.Controller.TimeOutResult(); // <- we need to call this function in order to trigger callback and release any waiting threads
             }
         }
         
@@ -281,6 +282,9 @@ namespace Gizmo.UI.Services
             if (state.State == NotificationState.Showing && !state.AddOptions.NotificationAckOptions.HasFlag(NotificationAckOptions.TimeOut))
             {
                 state.State = NotificationState.TimedOut;
+
+                state.Dispose();
+
                 //notify
                 NotificationsChanged?.Invoke(this, new NotificationsChangedArgs() { NotificationId = notificationId });
             }
@@ -313,17 +317,19 @@ namespace Gizmo.UI.Services
             if (!_notificationStates.TryGetValue(notificationId, out var state))
                 return false;
 
-            if (state.Timer == null)
+            var timer = state.Timer;
+
+            if (timer == null)
                 return false;
 
             if (!suspend)
             {
                 if (state.AddOptions.Timeout > 0)
-                    state.Timer.Change(TimeSpan.FromSeconds(state.AddOptions.Timeout.Value), Timeout.InfiniteTimeSpan);
+                    timer.Change(TimeSpan.FromSeconds(state.AddOptions.Timeout.Value), Timeout.InfiniteTimeSpan);
             }
             else
             {
-                state.Timer.Change(Timeout.Infinite, Timeout.Infinite);
+                timer.Change(Timeout.Infinite, Timeout.Infinite);
             }
 
 

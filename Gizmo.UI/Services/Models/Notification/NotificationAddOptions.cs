@@ -26,6 +26,6 @@
         public NotificationAckOptions NotificationAckOptions
         {
             get; init;
-        } = NotificationAckOptions.Dismiss | NotificationAckOptions.TimeOut;
+        } = NotificationAckOptions.Dismiss;
     }
 }
