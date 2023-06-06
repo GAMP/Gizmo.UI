@@ -238,7 +238,7 @@ namespace Gizmo.UI.Services
             if (!_notificationStates.TryGetValue(notificationId, out var state))
                 return false;
 
-            if (state.State == NotificationState.Showing && !state.AddOptions.NotificationAckOptions.HasFlag(NotificationAckOptions.Dismiss))
+            if (state.State == NotificationState.Showing && state.AddOptions.NotificationAckOptions.HasFlag(NotificationAckOptions.Dismiss))
             {
                 state.State = NotificationState.Dismissed;
                 //notify
