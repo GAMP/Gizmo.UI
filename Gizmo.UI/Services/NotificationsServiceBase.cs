@@ -48,6 +48,8 @@ namespace Gizmo.UI.Services
 
         private class NState : IDisposable
         {
+            ~NState() { }
+
             public NState(INotificationController notificationController, 
                 NotificationAddOptions addOptions)
             {
@@ -88,6 +90,7 @@ namespace Gizmo.UI.Services
 
             public void Dispose()
             {
+                GC.SuppressFinalize(this);
                 Timer?.Dispose();
             }
         }
@@ -116,6 +119,10 @@ namespace Gizmo.UI.Services
                 {
                     //use default timeout value if none provided
                     addOptions.Timeout = DEFAULT_NOTIFICATION_TIMEOUT;
+                }
+                else
+                {
+                    addOptions.Timeout = configuredTimeOutValue;
                 }
             }
 
