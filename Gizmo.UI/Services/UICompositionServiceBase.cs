@@ -22,7 +22,7 @@ namespace Gizmo.UI.Services
         #endregion
 
         #region EVENTS
-        public event EventHandler<EventArgs> Initialized;
+        public event EventHandler<EventArgs>? Initialized;
         #endregion
 
         #region FIELDS
@@ -35,6 +35,7 @@ namespace Gizmo.UI.Services
         protected List<UIPageModuleMetadata> _pageModules = new();
         private readonly ILogger _logger;
         private readonly IServiceProvider _serviceProvider;
+        private bool _isInitialized = false;
         #endregion
 
         #region PROPERTIES
@@ -62,6 +63,13 @@ namespace Gizmo.UI.Services
 
         /// <inheritdoc/>
         public Type? NotificationsComponentType => _notificationsComponentType;
+
+        /// <inheritdoc/>
+        public bool IsInitialized
+        {
+            get { return _isInitialized; }
+            private set { _isInitialized = value; }
+        }
 
         #region PROTECTED
 
@@ -98,6 +106,9 @@ namespace Gizmo.UI.Services
         /// <inheritdoc/>
         public virtual async Task InitializeAsync(CancellationToken ct)
         {  
+            //reset initialization value
+            IsInitialized = false;
+
             //here we should attempt to load any dependent assemblies
 
             //first we need to get the additional assemblies from configuration
@@ -160,48 +171,59 @@ namespace Gizmo.UI.Services
                 return;
             }
 
-            //get root component type
-            _rootComponentType = Type.GetType(appConfiguration.RootComponentType);
-
-            //get notifications component type
-            _notificationsComponentType = Type.GetType(appConfiguration.NotificationsComponentType);
-
-            //create list of all assembiles
-            var targetAssemblies = AdditionalAssemblies
-                .ToArray()
-                .Append(_appAssembly)
-                .ToArray();
-
-            //populate page modules
-            _pageModules = targetAssemblies
-                .SelectMany(assembly => assembly.GetTypes().Where(type => type.GetCustomAttribute<PageUIModuleAttribute>() != null))
-                .Select(type => new UIPageModuleMetadata()
-                {
-                    Title = type.GetCustomAttribute<PageUIModuleAttribute>()?.Title,
-                    TitleLocalizationKey = type.GetCustomAttribute<PageUIModuleAttribute>()?.TitleLocalizationKey,
-                    Description = type.GetCustomAttribute<PageUIModuleAttribute>()?.Description,
-                    DescriptionLocalizationKey = type.GetCustomAttribute<PageUIModuleAttribute>()?.DescriptionLocalizationKey,
-                    DefaultRoute = type.GetCustomAttribute<DefaultRouteAttribute>()?.Template,
-                    DefaultRouteMatch = type.GetCustomAttribute<DefaultRouteAttribute>()?.DefaultRouteMatch ?? NavlinkMatch.All,
-                    Routes = GetRoutes(type),
-                    DisplayOrder = type.GetCustomAttribute<ModuleDisplayOrderAttribute>()?.DisplayOrder ?? 0,
-                    Guid = type.GetCustomAttribute<ModuleGuidAttribute>()?.Guid,
-                    Type = type
-                })
-                .OrderBy(metaData => metaData.DisplayOrder)
-                .ToList();
-
-            foreach (var pageModule in _pageModules)
+            try
             {
-                Logger.LogInformation("Found page module {ModuleType}", pageModule.Type.Name);
-                Logger.LogInformation("Default route {DefaultRoute}", pageModule.DefaultRoute);
-                foreach (var route in pageModule.Routes)
-                {
-                    Logger.LogInformation("Found route template {Route}", route);
-                }
-            }
 
-            Initialized?.Invoke(this,EventArgs.Empty);
+                //get root component type
+                _rootComponentType = Type.GetType(appConfiguration.RootComponentType);
+
+                //get notifications component type
+                _notificationsComponentType = Type.GetType(appConfiguration.NotificationsComponentType);
+
+                //create list of all assembiles
+                var targetAssemblies = AdditionalAssemblies
+                    .ToArray()
+                    .Append(_appAssembly)
+                    .ToArray();
+
+                //populate page modules
+                _pageModules = targetAssemblies
+                    .SelectMany(assembly => assembly.GetTypes().Where(type => type.GetCustomAttribute<PageUIModuleAttribute>() != null))
+                    .Select(type => new UIPageModuleMetadata()
+                    {
+                        Title = type.GetCustomAttribute<PageUIModuleAttribute>()?.Title,
+                        TitleLocalizationKey = type.GetCustomAttribute<PageUIModuleAttribute>()?.TitleLocalizationKey,
+                        Description = type.GetCustomAttribute<PageUIModuleAttribute>()?.Description,
+                        DescriptionLocalizationKey = type.GetCustomAttribute<PageUIModuleAttribute>()?.DescriptionLocalizationKey,
+                        DefaultRoute = type.GetCustomAttribute<DefaultRouteAttribute>()?.Template,
+                        DefaultRouteMatch = type.GetCustomAttribute<DefaultRouteAttribute>()?.DefaultRouteMatch ?? NavlinkMatch.All,
+                        Routes = GetRoutes(type),
+                        DisplayOrder = type.GetCustomAttribute<ModuleDisplayOrderAttribute>()?.DisplayOrder ?? 0,
+                        Guid = type.GetCustomAttribute<ModuleGuidAttribute>()?.Guid,
+                        Type = type
+                    })
+                    .OrderBy(metaData => metaData.DisplayOrder)
+                    .ToList();
+
+                foreach (var pageModule in _pageModules)
+                {
+                    Logger.LogInformation("Found page module {ModuleType}", pageModule.Type.Name);
+                    Logger.LogInformation("Default route {DefaultRoute}", pageModule.DefaultRoute);
+                    foreach (var route in pageModule.Routes)
+                    {
+                        Logger.LogInformation("Found route template {Route}", route);
+                    }
+                }
+
+                Initialized?.Invoke(this, EventArgs.Empty);
+
+                //update initialization value
+                IsInitialized = true;
+            }
+            catch (Exception ex) 
+            {
+                Logger.LogError(ex, "Initialization failed.");
+            }
         }
 
         /// <summary>

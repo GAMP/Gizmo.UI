@@ -339,7 +339,7 @@ namespace Gizmo.UI.Services
         public IEnumerable<INotificationController> GetVisible()
         {
             return _notificationStates
-                .OrderBy(x=>x.Value.CreationTime)
+                .OrderByDescending(x=>x.Value.CreationTime)
                 .ThenByDescending(x => x.Value.AddOptions.Priority)
                 .Where(x => x.Value.State == NotificationState.Showing)
                 .Select(x => x.Value.Controller)
@@ -349,6 +349,8 @@ namespace Gizmo.UI.Services
         public IEnumerable<INotificationController> GetDismissed()
         {
             return _notificationStates.Where(x => x.Value.State != NotificationState.Showing)
+                .OrderByDescending(x => x.Value.CreationTime)
+                .ThenByDescending(x => x.Value.AddOptions.Priority)
                 .Select(x => x.Value.Controller)
                 .ToList();
         }

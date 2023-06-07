@@ -6,6 +6,11 @@
     public sealed class NotificationAddOptions
     {
         /// <summary>
+        /// Default acknowledge options (time-out or dismiss).
+        /// </summary>
+        public static readonly NotificationAddOptions DefaultAcknowlege = new NotificationAddOptions() { NotificationAckOptions = NotificationAckOptions.Dismiss | NotificationAckOptions.TimeOut };
+
+        /// <summary>
         /// Gets notification timeout.
         /// </summary>
         /// <remarks>
