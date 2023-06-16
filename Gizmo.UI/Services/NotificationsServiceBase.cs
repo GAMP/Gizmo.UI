@@ -34,6 +34,7 @@ namespace Gizmo.UI.Services
         #region FIELDS
 
         public event EventHandler<NotificationsChangedArgs>? NotificationsChanged;
+        public event EventHandler<NotificationHostSizeRequestArgs>? SizeRequest;
 
         private readonly IOptionsMonitor<NotificationsOptions> _options;
         private readonly IServiceProvider _serviceProvider;
@@ -320,6 +321,15 @@ namespace Gizmo.UI.Services
 
         public bool RequestNotificationHostSize(Size size)
         {
+            var handler = SizeRequest;
+            if (handler != null)
+            {
+                var args = new NotificationHostSizeRequestArgs() {  RequestedSize = size };
+                handler.Invoke(this, args);
+                return args.IsSatisfied;
+            }
+
+            //nobdy handles the even
             return true;
         }
 

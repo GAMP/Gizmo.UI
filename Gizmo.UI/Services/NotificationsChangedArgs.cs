@@ -2,6 +2,9 @@
 {
     public class NotificationsChangedArgs : EventArgs
     {
+        /// <summary>
+        /// Creates new instance.
+        /// </summary>
         public NotificationsChangedArgs() { }
 
         /// <summary>

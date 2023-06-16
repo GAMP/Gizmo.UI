@@ -8,6 +8,8 @@ namespace Gizmo.UI.Services
     public interface INotificationsService
     {
         public event EventHandler<NotificationsChangedArgs>? NotificationsChanged;
+        public event EventHandler<NotificationHostSizeRequestArgs>? SizeRequest;
+
         IEnumerable<INotificationController> GetVisible();
         IEnumerable<INotificationController> GetDismissed();
 
