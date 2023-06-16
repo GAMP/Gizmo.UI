@@ -316,7 +316,7 @@ namespace Gizmo.UI.Services
 
         public bool TryResetTimeout(int notificationId)
         {
-            return true;
+            return TrySuspendTimeOut(notificationId,false);
         }
 
         public bool RequestNotificationHostSize(Size size)
@@ -379,8 +379,6 @@ namespace Gizmo.UI.Services
         private void RaiseChanged(int notificationId)
         {
             NotificationsChanged?.Invoke(this, new NotificationsChangedArgs() {  NotificationId = notificationId });
-        }
-
-      
+        }      
     }
 }
