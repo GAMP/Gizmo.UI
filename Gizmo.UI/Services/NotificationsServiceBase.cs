@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Drawing;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -17,7 +18,7 @@ namespace Gizmo.UI.Services
         /// </summary>
         /// <param name="serviceProvider">Service provider.</param>
         /// <param name="logger">Logger.</param>
-        public NotificationsServiceBase( IOptionsMonitor<NotificationsOptions> options,
+        public NotificationsServiceBase(IOptionsMonitor<NotificationsOptions> options,
             IServiceProvider serviceProvider,
             ILogger logger)
         {
@@ -312,6 +313,11 @@ namespace Gizmo.UI.Services
             }
         }
 
+        public bool TryResetTimeout(int notificationId)
+        {
+            return true;
+        }
+
         public bool TrySuspendTimeOut(int notificationId, bool suspend)
         {
             if (!_notificationStates.TryGetValue(notificationId, out var state))
@@ -358,6 +364,11 @@ namespace Gizmo.UI.Services
         private void RaiseChanged(int notificationId)
         {
             NotificationsChanged?.Invoke(this, new NotificationsChangedArgs() {  NotificationId = notificationId });
+        }
+
+        public bool RequestNotificationHostSize(Size size)
+        {
+            return true;
         }
     }
 }
