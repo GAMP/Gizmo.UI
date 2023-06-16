@@ -318,6 +318,11 @@ namespace Gizmo.UI.Services
             return true;
         }
 
+        public bool RequestNotificationHostSize(Size size)
+        {
+            return true;
+        }
+
         public bool TrySuspendTimeOut(int notificationId, bool suspend)
         {
             if (!_notificationStates.TryGetValue(notificationId, out var state))
@@ -366,9 +371,6 @@ namespace Gizmo.UI.Services
             NotificationsChanged?.Invoke(this, new NotificationsChangedArgs() {  NotificationId = notificationId });
         }
 
-        public bool RequestNotificationHostSize(Size size)
-        {
-            return true;
-        }
+      
     }
 }
