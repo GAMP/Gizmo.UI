@@ -27,6 +27,7 @@ namespace Gizmo.UI.Services
         private readonly IStringLocalizer _localizer;
         private readonly ResourceManager _resourceManager;
 
+
         #endregion
 
         #region PROPERTIES
@@ -34,6 +35,8 @@ namespace Gizmo.UI.Services
         /// Gets logger instance.
         /// </summary>
         protected ILogger Logger { get; }
+        
+        public abstract event EventHandler<EventArgs>? LocalizationOptionsChanged;
 
         #endregion
 
