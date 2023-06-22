@@ -250,9 +250,10 @@ namespace Gizmo.UI.Services
         /// </summary>
         /// <param name="metadata">Module metadata.</param>
         /// <returns>True if allowed, false otherwise</returns>
+        /// <remarks>Implemented for later use where we can filter out some of the modules based on their metadata guid or other parameters.</remarks>
         protected virtual bool IsAllowedModule(UIPageModuleMetadata metadata)
         {
-            return false;
+            return true;
         }
 
         #endregion
