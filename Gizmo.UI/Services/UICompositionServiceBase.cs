@@ -202,6 +202,7 @@ namespace Gizmo.UI.Services
                         Guid = type.GetCustomAttribute<ModuleGuidAttribute>()?.Guid,
                         Type = type
                     })
+                    .Where(module=> IsAllowedModule(module))
                     .OrderBy(metaData => metaData.DisplayOrder)
                     .ToList();
 
@@ -242,6 +243,16 @@ namespace Gizmo.UI.Services
         protected virtual IEnumerable<string> GetRoutes(Type type)
         {
             return type.GetCustomAttributes<RouteAttribute>().Select(attribute => attribute.Template).ToArray();
+        }
+
+        /// <summary>
+        /// Used to check if specified module is allowed.
+        /// </summary>
+        /// <param name="metadata">Module metadata.</param>
+        /// <returns>True if allowed, false otherwise</returns>
+        protected virtual bool IsAllowedModule(UIPageModuleMetadata metadata)
+        {
+            return false;
         }
 
         #endregion
