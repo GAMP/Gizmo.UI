@@ -112,7 +112,8 @@ namespace Gizmo.UI.Services
             //user provider token cancellation handler
             cancellationToken.Register(() =>
             {
-                completionSource.TrySetCanceled();
+                TryRemove(dialogIdentifier);
+                completionSource.TrySetCanceled();                
             });
 
             //create dialog controller and pass the parameters
