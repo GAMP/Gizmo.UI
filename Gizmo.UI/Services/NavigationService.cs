@@ -43,13 +43,15 @@ namespace Gizmo.UI.Services
             if (navigationManager == null)
                 throw new ArgumentNullException(nameof(navigationManager));
 
-            if (_navigationManager == null)
+            if (_navigationManager != null)
             {
-                _navigationManager = navigationManager;
-                _navigationManager.LocationChanged += OnNavigationManagerLocationChanged;
-
-                LocationChanged?.Invoke(this, new LocationChangedEventArgs(navigationManager.Uri, false));
+                _navigationManager.LocationChanged -= OnNavigationManagerLocationChanged;
             }
+
+            _navigationManager = navigationManager;
+            _navigationManager.LocationChanged += OnNavigationManagerLocationChanged;
+
+            LocationChanged?.Invoke(this, new LocationChangedEventArgs(navigationManager.Uri, false));
         }
 
         public void NavigateTo(string uri, NavigationOptions options = default)
