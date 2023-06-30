@@ -19,7 +19,8 @@ namespace Gizmo.UI.Services
         #region FIELDS
         private readonly JSRuntimeService _jsRuntime;
         private NavigationManager? _navigationManager;
-
+        private readonly TaskCompletionSource _associateTask = new();
+        private readonly TimeSpan _associateWaitTime = TimeSpan.FromSeconds(10);
         #endregion
 
         #region EVENTS
@@ -51,11 +52,14 @@ namespace Gizmo.UI.Services
             _navigationManager = navigationManager;
             _navigationManager.LocationChanged += OnNavigationManagerLocationChanged;
 
+            _associateTask.TrySetResult();
+
             LocationChanged?.Invoke(this, new LocationChangedEventArgs(navigationManager.Uri, false));
         }
 
         public void NavigateTo(string uri, NavigationOptions options = default)
         {
+            _associateTask.Task.Wait(_associateWaitTime);
             _navigationManager?.NavigateTo(uri, options);
         }
 
