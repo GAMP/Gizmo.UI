@@ -38,6 +38,8 @@ namespace Gizmo.UI.Services
         
         public abstract event EventHandler<EventArgs>? LocalizationOptionsChanged;
 
+        public abstract event EventHandler<EventArgs>? LanguageChanged;
+
         #endregion
 
         #region PUBLIC FUNCTIONS
