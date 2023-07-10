@@ -18,7 +18,7 @@
         /// Set to null to use default value.<br></br>
         /// Set to -1 to use infinite timeout.<br></br>
         /// </remarks>
-        public int? Timeout { get; internal set; } = null;
+        public int? Timeout { get; set; } = null;
 
         /// <summary>
         /// Gets notification priority.
