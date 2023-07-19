@@ -62,6 +62,16 @@ namespace Gizmo.UI.View.Services
 
         private async void OnLocationChangedInternal(object? sender, LocationChangedEventArgs args)
         {
+            //call the location changed in derived classes
+            try
+            {
+                await OnLocationChanged(sender, args);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error while handling location changed event.");
+            }
+
             var (isFirstNavigation, isNavigatedIn) = GeLocationChangedInternalState(args.Location);
 
             if (isNavigatedIn)
@@ -101,16 +111,7 @@ namespace Gizmo.UI.View.Services
                 {
                     Logger.LogError(ex, "Error while handling navigated out event.");
                 }
-            }
-
-            try
-            {
-                await OnLocationChanged(sender, args);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Error while handling location changed event.");
-            }
+            }        
         }
 
         /// <summary>
