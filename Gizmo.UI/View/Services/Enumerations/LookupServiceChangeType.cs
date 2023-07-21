@@ -5,22 +5,23 @@
     /// </summary>
     public enum LookupServiceChangeType
     {
+        None = 0,
         /// <summary>
         /// View states initialized.
         /// </summary>
-        Initialized = 0,
+        Initialized = 1,
         /// <summary>
         /// View state added.
         /// </summary>
-        Added = 1,
+        Added = 2,
         /// <summary>
         /// View state removed.
         /// </summary>
-        Removed = 2,
+        Removed = 3,
         /// <summary>
         /// View state modified.
         /// </summary>
-        Modified = 3,
+        Modified = 4,
     }
 }
 

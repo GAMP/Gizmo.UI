@@ -198,6 +198,29 @@ namespace Gizmo.UI.View.Services
         /// <param name="modificationType">Type of changes.</param>
         protected void RaiseChanged(LookupServiceChangeType modificationType) =>
             Changed?.Invoke(this, new() { Type = modificationType });
+
+        protected async ValueTask ResetInitialization(CancellationToken cToken)
+        {
+            await _initializeLock.WaitAsync(cToken);
+
+            try
+            {
+                //clear current cache
+                _cache.Clear();
+
+                _dataInitialized = false;
+
+                RaiseChanged(LookupServiceChangeType.None);
+            }
+            catch (Exception exception)
+            {
+                Logger.LogError(exception, "Data reset initialization failed.");
+            }
+            finally
+            {
+                _initializeLock.Release();
+            }
+        }
         #endregion
 
         #region ABSTRACT FUNCTIONS
