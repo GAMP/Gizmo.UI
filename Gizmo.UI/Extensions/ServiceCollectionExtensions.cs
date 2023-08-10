@@ -158,10 +158,10 @@ namespace Gizmo.UI
             {
                 //get current compsition options
                 //they will contain the configuration
-                var compositionOptions = sp.GetRequiredService<IOptions<UICompositionOptions>>();
+                var compositionOptions = sp.GetRequiredService<IOptionsMonitor<UICompositionOptions>>();
 
                 //get app assembly
-                var appAssemblyName = compositionOptions.Value.AppAssembly;
+                var appAssemblyName = compositionOptions.CurrentValue.AppAssembly;
 
                 //check if app assembly is configured
                 if (appAssemblyName == null)
@@ -211,10 +211,10 @@ namespace Gizmo.UI
             {
                 //get current compsition options
                 //they will contain the configuration
-                var compositionOptions = sp.GetRequiredService<IOptions<UICompositionOptions>>();
+                var compositionOptions = sp.GetRequiredService<IOptionsMonitor<UICompositionOptions>>();
 
                 //get app assembly
-                var appAssemblyName = compositionOptions.Value.AppAssembly;
+                var appAssemblyName = compositionOptions.CurrentValue.AppAssembly;
 
                 //check if app assembly is configured
                 if (appAssemblyName == null)
