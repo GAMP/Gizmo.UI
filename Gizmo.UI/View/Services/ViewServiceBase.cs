@@ -99,6 +99,19 @@ namespace Gizmo.UI.View.Services
         }
 
         /// <summary>
+        /// Validate the command of the service.
+        /// </summary>
+        /// <typeparam name="TCommand">Command type that implements IViewServiceCommand interface.</typeparam>
+        /// <param name="command">Command from URL.</param>
+        /// <returns>true if command is valid, otherwise false.</returns>
+        /// <inheritdoc/>
+        /// <exception cref="NotImplementedException">If the function isn't implemented</exeption>
+        public virtual bool ValidateCommand<TCommand>(TCommand command) where TCommand : notnull, IViewServiceCommand
+        {
+            return false;
+        }
+
+        /// <summary>
         /// Execute the command of the service.
         /// </summary>
         /// <typeparam name="TCommand">Command type that implements IViewServiceCommand interface.</typeparam>
