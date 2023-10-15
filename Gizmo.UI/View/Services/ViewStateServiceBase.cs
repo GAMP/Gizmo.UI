@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using Gizmo.UI.Services;
 using Gizmo.UI.View.States;
 using Microsoft.AspNetCore.Components;
@@ -85,6 +86,7 @@ namespace Gizmo.UI.View.Services
 
                 try
                 {
+                    Logger.LogTrace("Navigating into view service {type}", GetType().FullName);
                     await OnNavigatedIn(new(isFirstNavigation, args.IsNavigationIntercepted), _navigatedInCancellationSource.Token);
                 }
                 catch (Exception ex)
@@ -105,6 +107,7 @@ namespace Gizmo.UI.View.Services
 
                 try
                 {
+                    Logger.LogTrace("Navigating out of view service {type}", GetType().FullName);
                     await OnNavigatedOut(new(false, args.IsNavigationIntercepted), _navigatedOutCancellationSource.Token);
                 }
                 catch (Exception ex)
@@ -129,7 +132,14 @@ namespace Gizmo.UI.View.Services
 
             var uri = new Uri(location, UriKind.Absolute);
 
-            isNavigatedIn = _associatedRoutes.Any(route => route.Template == uri.LocalPath);
+            if (!NavigationService.IsBaseUriRoot)
+            {
+                isNavigatedIn = _associatedRoutes.Any(route => uri.LocalPath.EndsWith(route.Template, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {                
+                isNavigatedIn = _associatedRoutes.Any(route => route.Template == uri.LocalPath);
+            }
 
             var isFirstNavigation = _navigatedRoutes.TryAdd(location, isNavigatedIn);
 

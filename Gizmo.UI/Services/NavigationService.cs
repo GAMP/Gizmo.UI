@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using System;
+using System.Security.Cryptography;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.JSInterop;
 
@@ -60,6 +62,14 @@ namespace Gizmo.UI.Services
         public void NavigateTo(string uri, NavigationOptions options = default)
         {
             _associateTask.Task.Wait(_associateWaitTime);
+
+            //https://github.com/dotnet/aspnetcore/issues/25204           
+            if (!IsBaseUriRoot)
+            {          
+                if (uri.StartsWith("/"))
+                    uri = uri[1..];
+            }
+
             _navigationManager?.NavigateTo(uri, options);
         }
 
@@ -71,6 +81,15 @@ namespace Gizmo.UI.Services
         public string GetBaseUri()
         {
             return _navigationManager?.BaseUri ?? string.Empty;
+        }
+
+        public bool IsBaseUriRoot
+        {
+            get
+            {
+                var baseUri = new Uri(_navigationManager!.BaseUri);
+                return baseUri.LocalPath == "/";
+            }
         }
 
         public async Task GoBackAsync()
