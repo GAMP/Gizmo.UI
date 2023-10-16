@@ -1,10 +1,11 @@
 ﻿using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using System.Reflection;
-using System.Security.Cryptography;
 using Gizmo.UI.Services;
 using Gizmo.UI.View.States;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -27,15 +28,22 @@ namespace Gizmo.UI.View.Services
             NavigationService = serviceProvider.GetRequiredService<NavigationService>();
             _debounceService = serviceProvider.GetRequiredService<DebounceActionService>();
 
-            _associatedRoutes = GetType().GetCustomAttributes<RouteAttribute>().ToList() ?? Enumerable.Empty<RouteAttribute>().ToList();
-            _navigatedRoutes = new(5, _associatedRoutes.Count);
+            _authorizeAttributes = GetType().GetCustomAttributes<AuthorizeAttribute>().ToList() ?? Enumerable.Empty<AuthorizeAttribute>();
+            _associatedRoutes = GetType().GetCustomAttributes<RouteAttribute>().ToList() ?? Enumerable.Empty<RouteAttribute>();
+            _navigatedRoutes = new(5, _associatedRoutes.Count());
+
+            //state provider service is optional, it might not be registered at some apps
+            _authenticationStateProvider = serviceProvider.GetService<AuthenticationStateProvider>();
+
             _stackRoutes = new();
         }
         #endregion
 
         #region FIELDS
 
-        private readonly List<RouteAttribute> _associatedRoutes; //set of associated routes
+        private readonly AuthenticationStateProvider? _authenticationStateProvider;
+        private readonly IEnumerable<AuthorizeAttribute> _authorizeAttributes;
+        private readonly IEnumerable<RouteAttribute> _associatedRoutes; //set of associated routes
         private readonly ConcurrentDictionary<string, bool> _navigatedRoutes; //keep visited routes and local paths of URL
         private readonly ConcurrentStack<string> _stackRoutes; //keep visited routes
 
@@ -63,6 +71,18 @@ namespace Gizmo.UI.View.Services
 
         private async void OnLocationChangedInternal(object? sender, LocationChangedEventArgs args)
         {
+            //check if service has any authorize attributes applied
+            //we also need to check if optional authentication state provider is set, we will need it to check the current user
+            if (_authorizeAttributes.Any() && _authenticationStateProvider != null)
+            {
+                //right now we only need to check if user is authenticated, we dont check roles or policies
+                var currentUser = await _authenticationStateProvider.GetAuthenticationStateAsync();
+
+                //do not forward location changes in case no user is logged in
+                if (currentUser.User.Identity?.IsAuthenticated != true)
+                    return;
+            }
+
             //call the location changed in derived classes
             try
             {
@@ -114,7 +134,7 @@ namespace Gizmo.UI.View.Services
                 {
                     Logger.LogError(ex, "Error while handling navigated out event.");
                 }
-            }        
+            }
         }
 
         /// <summary>
@@ -137,7 +157,7 @@ namespace Gizmo.UI.View.Services
                 isNavigatedIn = _associatedRoutes.Any(route => uri.LocalPath.EndsWith(route.Template, StringComparison.OrdinalIgnoreCase));
             }
             else
-            {                
+            {
                 isNavigatedIn = _associatedRoutes.Any(route => route.Template == uri.LocalPath);
             }
 
