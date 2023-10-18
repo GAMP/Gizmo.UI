@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using System.Reflection;
-using System.Security.Cryptography;
+using System.Security.Claims;
 using Gizmo.UI.Services;
 using Gizmo.UI.View.States;
 using Microsoft.AspNetCore.Authorization;
@@ -121,7 +121,7 @@ namespace Gizmo.UI.View.Services
                         }
                     }
                 }
-            }     
+            }
 
             if (isNavigatedIn)
             {
@@ -285,6 +285,19 @@ namespace Gizmo.UI.View.Services
         }
 
         #endregion
+
+        /// <summary>
+        /// Gets current principal.
+        /// </summary>
+        /// <returns>Current principal.</returns>
+        protected async ValueTask<ClaimsPrincipal> GetCurrentPrincipal()
+        {
+            if (_authenticationStateProvider == null)
+                return new ClaimsPrincipal();
+
+            var result = await _authenticationStateProvider.GetAuthenticationStateAsync();
+            return result.User;
+        }
     }
 
     public record NavigationParameters(bool IsInitial, bool IsByLink);
