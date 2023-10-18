@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using Gizmo.UI.Services;
 using Gizmo.UI.View.States;
 using Microsoft.AspNetCore.Authorization;
@@ -35,12 +36,22 @@ namespace Gizmo.UI.View.Services
             //state provider service is optional, it might not be registered at some apps
             _authenticationStateProvider = serviceProvider.GetService<AuthenticationStateProvider>();
 
+            //authorizationservice might also be not registered so its optional
+            _authorizationService = serviceProvider.GetService<IAuthorizationService>();
+
+            _requiredPolicies = _authorizeAttributes
+                .Where(a => !string.IsNullOrWhiteSpace(a.Policy))
+                .Select(a => a.Policy!)
+                .ToArray();
+
             _stackRoutes = new();
         }
         #endregion
 
         #region FIELDS
 
+        private readonly IEnumerable<string> _requiredPolicies;
+        private readonly IAuthorizationService? _authorizationService;
         private readonly AuthenticationStateProvider? _authenticationStateProvider;
         private readonly IEnumerable<AuthorizeAttribute> _authorizeAttributes;
         private readonly IEnumerable<RouteAttribute> _associatedRoutes; //set of associated routes
@@ -71,18 +82,6 @@ namespace Gizmo.UI.View.Services
 
         private async void OnLocationChangedInternal(object? sender, LocationChangedEventArgs args)
         {
-            //check if service has any authorize attributes applied
-            //we also need to check if optional authentication state provider is set, we will need it to check the current user
-            if (_authorizeAttributes.Any() && _authenticationStateProvider != null)
-            {
-                //right now we only need to check if user is authenticated, we dont check roles or policies
-                var currentUser = await _authenticationStateProvider.GetAuthenticationStateAsync();
-
-                //do not forward location changes in case no user is logged in
-                if (currentUser.User.Identity?.IsAuthenticated != true)
-                    return;
-            }
-
             //call the location changed in derived classes
             try
             {
@@ -94,6 +93,35 @@ namespace Gizmo.UI.View.Services
             }
 
             var (isFirstNavigation, isNavigatedIn) = GeLocationChangedInternalState(args.Location);
+
+            if (isNavigatedIn)
+            {
+                //check if service has any authorize attributes applied
+                //we also need to check if optional authentication state provider is set, we will need it to check the current user
+                if (_authorizeAttributes.Any() && _authenticationStateProvider != null)
+                {
+                    //right now we only need to check if user is authenticated, we dont check roles or policies
+                    var currentUser = await _authenticationStateProvider.GetAuthenticationStateAsync();
+
+                    //do not forward location changes in case no user is logged in
+                    if (currentUser.User.Identity?.IsAuthenticated != true)
+                        return;
+
+                    //check if AuthorizationService is registered and try to pass the requirements
+                    if (_authorizationService != null)
+                    {
+                        foreach (var policy in _requiredPolicies)
+                        {
+                            var result = await _authorizationService!.AuthorizeAsync(currentUser.User, policy);
+                            if (!result.Succeeded)
+                            {
+                                //we dont need to log failures since IAuthorizationService already does this for us
+                                return;
+                            }
+                        }
+                    }
+                }
+            }     
 
             if (isNavigatedIn)
             {
