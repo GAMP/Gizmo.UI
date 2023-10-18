@@ -1,7 +1,6 @@
-﻿using System;
-using System.Security.Cryptography;
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
+using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 
 namespace Gizmo.UI.Services
@@ -12,13 +11,15 @@ namespace Gizmo.UI.Services
     public sealed class NavigationService
     {
         #region CONSTRUCTOR
-        public NavigationService(JSRuntimeService jsRuntime)
+        public NavigationService(JSRuntimeService jsRuntime, ILogger<NavigationService> logger)
         {
             _jsRuntime = jsRuntime;
+            _logger = logger;
         }
         #endregion
 
         #region FIELDS
+        private readonly ILogger<NavigationService> _logger;
         private readonly JSRuntimeService _jsRuntime;
         private NavigationManager? _navigationManager;
         private readonly TaskCompletionSource _associateTask = new();
@@ -60,15 +61,24 @@ namespace Gizmo.UI.Services
         }
 
         public void NavigateTo(string uri, NavigationOptions options = default)
-        {
+        {            
             _associateTask.Task.Wait(_associateWaitTime);
 
             //https://github.com/dotnet/aspnetcore/issues/25204           
             if (!IsBaseUriRoot)
-            {          
-                if (uri.StartsWith("/"))
-                    uri = uri[1..];
+            {
+                if (uri == "/")
+                {
+                    uri = _navigationManager!.BaseUri;
+                }
+                else
+                {
+                    if (uri.StartsWith("/"))
+                        uri = uri[1..];
+                }
             }
+
+            _logger.LogTrace("Requested navigation to {url}", uri);
 
             _navigationManager?.NavigateTo(uri, options);
         }
