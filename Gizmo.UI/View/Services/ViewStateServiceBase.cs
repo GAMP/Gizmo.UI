@@ -73,6 +73,11 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         protected NavigationService NavigationService { get; }
 
+        /// <summary>
+        /// Gets authentication state provider.
+        /// </summary>
+        protected AuthenticationStateProvider? AuthenticationStateProvider => _authenticationStateProvider;
+
         #endregion
 
         #region PRIVATE FUNCTIONS
@@ -236,6 +241,19 @@ namespace Gizmo.UI.View.Services
             return state;
         }
 
+        /// <summary>
+        /// Gets current principal provided by <see cref="AuthenticationStateProvider"/>.
+        /// </summary>
+        /// <returns>Current principal.</returns>
+        protected async ValueTask<ClaimsPrincipal> GetCurrentPrincipal()
+        {
+            if (_authenticationStateProvider == null)
+                return new ClaimsPrincipal();
+
+            var result = await _authenticationStateProvider.GetAuthenticationStateAsync();
+            return result.User;
+        }
+
         #endregion
 
         #region PROTECTED VIRTUAL
@@ -284,20 +302,7 @@ namespace Gizmo.UI.View.Services
             base.OnDisposing(isDisposing);
         }
 
-        #endregion
-
-        /// <summary>
-        /// Gets current principal.
-        /// </summary>
-        /// <returns>Current principal.</returns>
-        protected async ValueTask<ClaimsPrincipal> GetCurrentPrincipal()
-        {
-            if (_authenticationStateProvider == null)
-                return new ClaimsPrincipal();
-
-            var result = await _authenticationStateProvider.GetAuthenticationStateAsync();
-            return result.User;
-        }
+        #endregion        
     }
 
     public record NavigationParameters(bool IsInitial, bool IsByLink);
