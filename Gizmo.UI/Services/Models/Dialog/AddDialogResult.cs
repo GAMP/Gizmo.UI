@@ -5,6 +5,7 @@
     /// </summary>
     public sealed class AddDialogResult<TResult> : AddComponentResultBase<TResult, IDialogController> where TResult : class, new()
     {
-        public AddDialogResult(AddComponentResultCode addResult, IDialogController? controller, TaskCompletionSource<TResult>? tcs) : base(addResult, controller, tcs) { }
+        public AddDialogResult(AddComponentResultCode addResult, IDialogController? controller, TaskCompletionSource<TResult>? tcs) 
+            : base(addResult, controller, tcs) { }
     }
 }
