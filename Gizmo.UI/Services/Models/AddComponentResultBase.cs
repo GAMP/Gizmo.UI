@@ -51,7 +51,13 @@
         /// <summary>
         /// Waits for component result and set <see cref="Result"/> property.
         /// </summary>
+        /// <param name="cancellationToken">Optional cancellation token.</param>
         /// <returns>Task.</returns>
+        /// <remarks>
+        /// <b>Specifying <paramref name="cancellationToken"/> and cancelling does not cause dialog to be cancelled.<br></br></b><br></br>
+        /// <see cref="OperationCanceledException"/> might be thrown if <paramref name="cancellationToken"/> is specified and cancelled durring wait.<br></br>
+        /// If no <paramref name="cancellationToken"/> specified the cancellation will be communicated with result code.
+        /// </remarks>
         /// <exception cref="OperationCanceledException"></exception>
         public async Task<TResult?> WaitForResultAsync(CancellationToken cancellationToken = default)
         {
