@@ -55,11 +55,9 @@ namespace Gizmo.UI.View.Services
         {
             try
             {
-                await GenerateSuggestionsAsync(cancellationToken);
-
-                var states = ViewState.Suggestions;
-
-                foreach (var state in states)
+                var suggestions = await GenerateSuggestionsAsync(cancellationToken);
+                ViewState.SetSuggestions(suggestions);
+                foreach (var state in suggestions)
                     _suggestionsViewStateCache.AddOrUpdate(state.GetSelectionValue(), (s) => state, (s, e) => state);          
 
             }
@@ -77,7 +75,8 @@ namespace Gizmo.UI.View.Services
 
         public ISuggestionViewState? GetSuggestionViewState(object? value)
         {
-            if(value == null) return null;
+            if(value == null) 
+                return null;
 
             if (TryGetFromCache(value, out var result))
                 return result;
@@ -111,10 +110,11 @@ namespace Gizmo.UI.View.Services
         protected abstract Task InitializeSuggestionAsync(object value, TSuggestionViewState viewState, CancellationToken cancellationToken);
 
         /// <summary>
-        /// When implemented should initialize suggestions based on <see cref="TSuggestionsViewState.Pattern"/>.
+        /// When implemented should generate suggestions based on <see cref="TSuggestionsViewState.Pattern"/>.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token.</param>
-        protected abstract Task GenerateSuggestionsAsync(CancellationToken cancellationToken = default);
+        /// <returns>Generated suggestions.</returns>
+        protected abstract Task<IEnumerable<TSuggestionViewState>> GenerateSuggestionsAsync(CancellationToken cancellationToken = default);
 
         protected void InitializeSuggestionCallback(Task task, object? suggestionState)
         {

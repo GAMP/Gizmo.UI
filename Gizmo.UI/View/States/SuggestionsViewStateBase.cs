@@ -16,5 +16,10 @@
         {
             Suggestions = Enumerable.Empty<TSuggestion>();
         }
+
+        public void SetSuggestions(IEnumerable<TSuggestion> suggestions)
+        {
+            Suggestions = suggestions;
+        }
     }
 }
