@@ -11,5 +11,10 @@
         public IEnumerable<TSuggestion> Suggestions { get; set; } = Enumerable.Empty<TSuggestion>();
 
         IEnumerable<ISuggestionViewState> ISuggestionsViewState.Suggestions => Suggestions.OfType<ISuggestionViewState>();
+
+        public void ResetSuggestions()
+        {
+            Suggestions = Enumerable.Empty<TSuggestion>();
+        }
     }
 }
