@@ -38,6 +38,7 @@ namespace Gizmo.UI.View.Services
         private async Task GenerateSuggestionsAsyncInternal(CancellationToken cancellationToken = default)
         {
             ViewState.IsInitializing = true;
+            ViewState.RaiseChanged();
 
             try
             {
