@@ -1,8 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
-using Gizmo.UI.Services;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using Gizmo.UI.View.States;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Gizmo.UI.View.Services
@@ -17,14 +17,14 @@ namespace Gizmo.UI.View.Services
         public SuggestionsViewServiceBase(TSuggestionsViewState viewState, ILogger<SuggestionsViewServiceBase<TSuggestionsViewState, TSuggestionViewState>> logger, IServiceProvider serviceProvider) :
             base(viewState, logger, serviceProvider)
         {
-            _debounceActionAsyncService = ServiceProvider.GetRequiredService<DebounceActionAsyncService>();
-            _debounceActionAsyncService.DebounceBufferTime = 1000;
         }
 
         private CancellationTokenSource? _cancellationTokenSource;
         private CancellationTokenSource? _suggestionInitTokenSource;
-        private readonly DebounceActionAsyncService _debounceActionAsyncService;
         private readonly ConcurrentDictionary<object, TSuggestionViewState> _suggestionsViewStateCache = new();
+
+        private Subject<string>? _patternSubject;
+        private IDisposable? _patternSubscription;
         
         private string? _previousPattern;
 
@@ -34,19 +34,20 @@ namespace Gizmo.UI.View.Services
                 return Task.CompletedTask;
 
             _previousPattern = pattern;
-
-            _cancellationTokenSource?.Cancel();
-            _cancellationTokenSource = new CancellationTokenSource();
-
+     
             //we could validate pattern here if required
-
             ViewState.IsInitializing = true;//this will be reset once the debounce method completes
 
             ViewState.Pattern = pattern;
             ViewState.ResetSuggestions();
             ViewState.RaiseChanged();
 
-            _debounceActionAsyncService.Debounce(GenerateSuggestionsAsyncInternal, _cancellationTokenSource.Token);
+            _patternSubject ??= new Subject<string>();
+            _patternSubscription ??= _patternSubject
+                .Throttle(TimeSpan.FromSeconds(1))
+                .Subscribe(PatternChangeSubscriber);
+
+            _patternSubject.OnNext(pattern);
 
             return Task.CompletedTask;
         }
@@ -140,9 +141,23 @@ namespace Gizmo.UI.View.Services
             }
         }
 
+        private void PatternChangeSubscriber(string pattern)
+        {
+            _cancellationTokenSource?.Cancel();
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = new CancellationTokenSource();
+
+            _ = GenerateSuggestionsAsyncInternal(_cancellationTokenSource.Token)               
+                .ContinueWith(task =>
+                {
+                    if (task.IsFaulted)
+                        Logger.LogError(task.Exception, "GenerateSuggestionsAsyncInternal throttled handler error.");
+                })
+                .ConfigureAwait(false);
+        }
+
         protected override void OnDisposing(bool dis)
         {
-            _debounceActionAsyncService?.Dispose();
             _suggestionsViewStateCache?.Clear();
 
             _cancellationTokenSource?.Cancel();
@@ -150,6 +165,9 @@ namespace Gizmo.UI.View.Services
 
             _cancellationTokenSource?.Dispose();
             _suggestionInitTokenSource?.Dispose();
+
+            _patternSubject?.Dispose();
+            _patternSubscription?.Dispose();
 
             base.OnDisposing(dis);
         }
