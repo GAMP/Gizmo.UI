@@ -228,7 +228,7 @@ namespace Gizmo.UI.View.Services
         /// Initializes data.
         /// </summary>
         /// <param name="cToken">Cancellation token.</param>
-        /// <returns>True if initialization was successful, false if retry needed.</returns>
+        /// <returns>Results dictionary.</returns>
         /// <remarks>
         /// The method is responsible of initializing initial data.<br></br>
         /// Example would be calling an service over api and getting required data and creating appropriate initial view states.<br></br>
