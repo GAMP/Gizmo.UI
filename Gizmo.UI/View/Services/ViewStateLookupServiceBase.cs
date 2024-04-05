@@ -86,7 +86,7 @@ namespace Gizmo.UI.View.Services
 
                 if (withUpdate && hasValue)
                 {
-                    var updatedViewState = await UpdateViewStateAsync(viewState!, cancellationToken);
+                    var updatedViewState = await UpdateViewStateAsync(key, viewState!, cancellationToken);
 
                     if(!_cache.TryUpdate(key, updatedViewState, viewState!))
                     {
@@ -239,6 +239,24 @@ namespace Gizmo.UI.View.Services
             }
         }
 
+        /// <summary>
+        /// Logs getting state error.
+        /// </summary>
+        /// <param name="exception">Error exception.</param>
+        protected void LogCreateStateError(Exception exception)
+        {
+            Logger.LogError(exception, "Error getting state.");
+        }
+
+        /// <summary>
+        /// Logs updating state error.
+        /// </summary>
+        /// <param name="exception">Error exception.</param>
+        protected void LogUpdateStateError(Exception exception)
+        {
+            Logger.LogError(exception, "Error updating state.");
+        }
+
         #endregion
 
         #region ABSTRACT FUNCTIONS
@@ -271,13 +289,15 @@ namespace Gizmo.UI.View.Services
         /// <summary>
         /// Responsible of updating the view state.
         /// </summary>
+        /// <param name="key">View state lookup key.</param>
+        /// <param name="viewState">Existing view state instance.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Updated view state.</returns>
         /// <remarks>
         /// It is responsible of updating view state for single item.<br></br>
         /// <b>This function should not attempt to modify the cache, its only purpose is to update the view state.</b>
         /// </remarks>
-        protected abstract ValueTask<TViewState> UpdateViewStateAsync(TViewState viewState, CancellationToken cancellationToken = default);
+        protected abstract ValueTask<TViewState> UpdateViewStateAsync(TKey key, TViewState viewState, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates default view state.
