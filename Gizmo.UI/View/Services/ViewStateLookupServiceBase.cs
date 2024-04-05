@@ -29,6 +29,14 @@ namespace Gizmo.UI.View.Services
         private readonly DebounceActionService _debounceService;
         #endregion
 
+        /// <summary>
+        /// Initialization lock.
+        /// </summary>
+        /// <remarks>
+        /// This will be required in implementations in order to be able to wait for the initialization to complete.
+        /// </remarks>
+        protected SemaphoreSlim InitializationLock => _initializeLock;
+
         #region PUBLIC EVENTS
         /// <summary>
         /// Occurs when view state is changed.
