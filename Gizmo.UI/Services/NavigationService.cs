@@ -42,7 +42,7 @@ namespace Gizmo.UI.Services
         /// </summary>
         /// <param name="navigationManager">Navigation manager.</param>
         /// <exception cref="ArgumentNullException"></exception>
-        public void AssociateNavigtionManager(NavigationManager navigationManager)
+        public void AssociateNavigationManager(NavigationManager navigationManager)
         {
             if (navigationManager == null)
                 throw new ArgumentNullException(nameof(navigationManager));
@@ -81,6 +81,27 @@ namespace Gizmo.UI.Services
             _logger.LogTrace("Requested navigation to {url}", uri);
 
             _navigationManager?.NavigateTo(uri, options);
+        }
+
+        public string CreateUri(string uri)
+        {
+            _associateTask.Task.Wait(_associateWaitTime);
+
+            //https://github.com/dotnet/aspnetcore/issues/25204           
+            if (!IsBaseUriRoot)
+            {
+                if (uri == "/")
+                {
+                    uri = _navigationManager!.BaseUri;
+                }
+                else
+                {
+                    if (uri.StartsWith("/"))
+                        uri = uri[1..];
+                }
+            }
+
+            return uri;
         }
 
         public string GetUri()
