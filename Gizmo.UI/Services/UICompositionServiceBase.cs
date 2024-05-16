@@ -200,6 +200,7 @@ namespace Gizmo.UI.Services
                         Routes = GetRoutes(type),
                         DisplayOrder = type.GetCustomAttribute<ModuleDisplayOrderAttribute>()?.DisplayOrder ?? 0,
                         Guid = type.GetCustomAttribute<ModuleGuidAttribute>()?.Guid,
+                        Icon = type.GetCustomAttribute<ModuleIconAttribute>()?.Icon,
                         Type = type
                     })
                     .Where(module=> IsAllowedModule(module))
