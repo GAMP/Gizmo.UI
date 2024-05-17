@@ -79,7 +79,7 @@ namespace Gizmo.UI.View.Services
                 //call initialization routine
                 await OnInitializing(ct);
 
-                //mar as initialzed
+                //mar as initialized
                 IsInitialized = true;
             }
             catch (Exception ex)
