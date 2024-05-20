@@ -28,7 +28,7 @@ namespace Gizmo.UI.Services
         #region FIELDS
         private readonly IDisposable _changeMonitor;
         private readonly IOptionsMonitor<UICompositionOptions> _optionsMonitor;
-        protected HashSet<Assembly> _addtionalAssemblies = new();
+        protected HashSet<Assembly> _additionalAssemblies = new();
         protected Assembly? _appAssembly = default;
         protected Type? _rootComponentType = default;
         protected Type? _notificationsComponentType = default;
@@ -43,7 +43,7 @@ namespace Gizmo.UI.Services
         /// <inheritdoc/>
         public virtual IEnumerable<Assembly> AdditionalAssemblies
         {
-            get { return _addtionalAssemblies; }
+            get { return _additionalAssemblies; }
         }
 
         /// <inheritdoc/>
@@ -152,7 +152,7 @@ namespace Gizmo.UI.Services
                     var assembly = await LoadAssemblyAsync(externalAssembly, ct);
 
                     //add additional assembly
-                    _addtionalAssemblies.Add(assembly);
+                    _additionalAssemblies.Add(assembly);
                 }
                 catch (Exception ex)
                 {
@@ -180,7 +180,7 @@ namespace Gizmo.UI.Services
                 //get notifications component type
                 _notificationsComponentType = Type.GetType(appConfiguration.NotificationsComponentType);
 
-                //create list of all assembiles
+                //create list of all assemblies
                 var targetAssemblies = AdditionalAssemblies
                     .ToArray()
                     .Append(_appAssembly)
@@ -229,7 +229,7 @@ namespace Gizmo.UI.Services
         }
 
         /// <summary>
-        /// Loads the specified library into current appdomain and service.
+        /// Loads the specified library into current app-domain and service.
         /// </summary>
         /// <param name="assemblyName">Assembly name.</param>
         /// <param name="ct">Cancellation token.</param>
