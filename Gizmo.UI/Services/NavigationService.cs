@@ -83,6 +83,19 @@ namespace Gizmo.UI.Services
             _navigationManager?.NavigateTo(uri, options);
         }
 
+        /// <summary>
+        /// Opens page with "window.open" java script function.
+        /// </summary>
+        /// <param name="uri">Uri.</param>
+        /// <param name="target">Target.</param>
+        public async Task OpenPageAsync(string  uri, string target= "_blank")
+        {
+            uri = CreateUri(uri);
+
+           if(_jsRuntime.JSRuntime!=null)
+                await _jsRuntime.JSRuntime!.InvokeVoidAsync("window.open", uri, target);
+        }
+
         public string CreateUri(string uri)
         {
             _associateTask.Task.Wait(_associateWaitTime);
