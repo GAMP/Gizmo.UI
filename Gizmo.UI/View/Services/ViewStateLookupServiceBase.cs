@@ -88,9 +88,9 @@ namespace Gizmo.UI.View.Services
                 {
                     var updatedViewState = await UpdateViewStateAsync(key, viewState!, cancellationToken);
 
-                    if(!_cache.TryUpdate(key, updatedViewState, viewState!))
+                    if(_cache.TryUpdate(key, updatedViewState, viewState!))
                     {
-                        //the view state was not replaced, that mean that we have updated existing one and some UI might be holding into it
+                        //the view state was replaced, that mean that we have updated existing one and some UI might be holding into it
                         //in such cases we need notify UI of changes made
                         _debounceService.Debounce(updatedViewState.RaiseChanged);
                     }
