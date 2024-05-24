@@ -54,7 +54,7 @@ namespace Gizmo.UI.View.Services
         /// <returns>View states.</returns>
         public async ValueTask<IEnumerable<TViewState>> GetStatesAsync(CancellationToken cancellationToken = default)
         {
-            //this will trigger data initalization if required
+            //this will trigger data initialization if required
             await EnsureDataInitialized(cancellationToken);
 
             //return any generated view states
@@ -170,6 +170,15 @@ namespace Gizmo.UI.View.Services
         /// <returns>True if found in cache, otherwise false.</returns>
         protected bool TryGetState(TKey key, [NotNullWhen(true)] out TViewState? state) =>
             _cache.TryGetValue(key, out state);
+
+        /// <summary>
+        /// Gets currently cached view states.
+        /// </summary>
+        /// <returns></returns>
+        protected IEnumerable<TViewState> GetCachedStates()
+        {
+            return _cache.Values;
+        }
      
         /// <summary>
         /// Debounces view state change.
