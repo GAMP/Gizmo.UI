@@ -34,7 +34,7 @@
         }
 
         /// <summary>
-        /// Cancells any linked operations.
+        /// Cancels any linked operations.
         /// </summary>
         public void Cancel()
         {
