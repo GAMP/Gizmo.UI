@@ -329,7 +329,7 @@ namespace Gizmo.UI.Services
                 return args.IsSatisfied;
             }
 
-            //nobdy handles the even
+            //nobody handles the event
             return true;
         }
 

@@ -8,7 +8,7 @@
         /// <summary>
         /// Default acknowledge options (time-out or dismiss).
         /// </summary>
-        public static readonly NotificationAddOptions DefaultAcknowlege = new NotificationAddOptions() { NotificationAckOptions = NotificationAckOptions.Dismiss | NotificationAckOptions.TimeOut };
+        public static readonly NotificationAddOptions DefaultAcknowledge = new NotificationAddOptions() { NotificationAckOptions = NotificationAckOptions.Dismiss | NotificationAckOptions.TimeOut };
 
         /// <summary>
         /// Gets notification timeout.
