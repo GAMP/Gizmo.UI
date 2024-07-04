@@ -225,7 +225,14 @@ namespace Gizmo.UI.View.Services
         protected void RaiseChanged(LookupServiceChangeType modificationType) =>
             Changed?.Invoke(this, new() { Type = modificationType });
 
-        protected async ValueTask ResetInitialization(CancellationToken cancellationToken)
+        /// <summary>
+        /// Resets initialization.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <remarks>
+        /// This function should be called once current initialization state no longer considered valid.
+        /// </remarks>
+        protected async ValueTask ResetInitialization(CancellationToken cancellationToken = default)
         {
             await _initializeLock.WaitAsync(cancellationToken);
 
@@ -320,6 +327,7 @@ namespace Gizmo.UI.View.Services
         /// </remarks>
         /// <exception cref="InvalidOperationException">thrown if <typeparamref name="TViewState"/> is not registered in IOC container.</exception>
         protected abstract TViewState CreateDefaultViewState(TKey key);
+
         #endregion
     }
 }
