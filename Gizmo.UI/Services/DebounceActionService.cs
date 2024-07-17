@@ -28,7 +28,7 @@ namespace Gizmo.UI.Services
         #region PROPERTIES
 
         /// <summary>
-        /// Debounce buffertime.
+        /// Debounce buffer time.
         /// </summary>
         public int DebounceBufferTime
         {
