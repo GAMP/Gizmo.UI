@@ -172,6 +172,17 @@ namespace Gizmo.UI.View.Services
             _cache.TryGetValue(key, out state);
 
         /// <summary>
+        /// Gets or adds view state.
+        /// </summary>
+        /// <param name="key">View state key.</param>
+        /// <param name="stateFactory">View state creation factory.</param>
+        /// <returns>View state.</returns>
+        protected TViewState GetOrAdd(TKey key, Func<TKey,TViewState> stateFactory)
+        {
+           return _cache.GetOrAdd(key, stateFactory);
+        }
+
+        /// <summary>
         /// Gets currently cached view states.
         /// </summary>
         /// <returns></returns>
