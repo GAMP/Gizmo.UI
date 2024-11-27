@@ -53,8 +53,6 @@ namespace Gizmo.UI.Services
         /// <inheritdoc/>
         public virtual string GetString(string key, params object[] arguments)
         {
-            var ui = CultureInfo.CurrentCulture;
-            var ui2 = CultureInfo.CurrentUICulture;
             return _localizer.GetString(key, arguments);
         }
 
