@@ -36,7 +36,7 @@ namespace Gizmo.UI.View.Services
             //state provider service is optional, it might not be registered at some apps
             _authenticationStateProvider = serviceProvider.GetService<AuthenticationStateProvider>();
 
-            //authorizationservice might also be not registered so its optional
+            //authorization service might also be not registered so its optional
             _authorizationService = serviceProvider.GetService<IAuthorizationService>();
 
             _requiredPolicies = _authorizeAttributes
