@@ -1,7 +1,7 @@
 ﻿namespace Gizmo.UI.Services
 {
     /// <summary>
-    /// Component additon result base implementation.
+    /// Component addition result base implementation.
     /// </summary>
     /// <typeparam name="TResult">Result type.</typeparam>
     /// <typeparam name="TController">Component controller type.</typeparam>
@@ -24,7 +24,7 @@
         private AddComponentResultCode _result;
 
         /// <summary>
-        /// Gets additon result.
+        /// Gets addition result.
         /// </summary>
         public AddComponentResultCode Result 
         { 
@@ -66,13 +66,13 @@
                 if (task.IsFaulted)
                 {
                     //get base exception
-                    var baseExcption = task.Exception?.GetBaseException();
+                    var baseException = task.Exception?.GetBaseException();
 
-                    if(baseExcption == IComponentController.DismissedException)
+                    if(baseException == IComponentController.DismissedException)
                     {
                         _result = AddComponentResultCode.Dismissed;
                     }
-                    else if(baseExcption == IComponentController.TimeoutException)
+                    else if(baseException == IComponentController.TimeoutException)
                     {
                         _result = AddComponentResultCode.TimeOut;
                     }
