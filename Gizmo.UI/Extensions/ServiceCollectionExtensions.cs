@@ -156,7 +156,7 @@ namespace Gizmo.UI
             //add dialog service by type
             services.TryAddSingleton(typeof(TService), (sp) =>
             {
-                //get current compsition options
+                //get current composition options
                 //they will contain the configuration
                 var compositionOptions = sp.GetRequiredService<IOptionsMonitor<UICompositionOptions>>();
 
@@ -209,7 +209,7 @@ namespace Gizmo.UI
             //add dialog service by type
             services.TryAddSingleton(typeof(TService), (sp) =>
             {
-                //get current compsition options
+                //get current composition options
                 //they will contain the configuration
                 var compositionOptions = sp.GetRequiredService<IOptionsMonitor<UICompositionOptions>>();
 
