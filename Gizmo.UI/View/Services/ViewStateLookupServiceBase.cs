@@ -183,6 +183,16 @@ namespace Gizmo.UI.View.Services
         }
 
         /// <summary>
+        /// Gets or adds default view state.
+        /// </summary>
+        /// <param name="key">View state key.</param>
+        /// <returns>View state.</returns>
+        protected TViewState GetOrAddDefault(TKey key)
+        {
+            return GetOrAdd(key, itemKey => CreateDefaultViewState(itemKey));
+        }
+
+        /// <summary>
         /// Gets currently cached view states.
         /// </summary>
         /// <returns></returns>
