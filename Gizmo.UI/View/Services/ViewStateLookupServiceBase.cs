@@ -148,6 +148,10 @@ namespace Gizmo.UI.View.Services
                 //view states/data was initialized
                 RaiseChanged(LookupServiceChangeType.Initialized);
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception exception)
             {
                 Logger.LogError(exception, "Data initialization failed.");
