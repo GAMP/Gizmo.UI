@@ -68,6 +68,16 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         /// <param name="key">View state key.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>View state.</returns>
+        public ValueTask<TViewState> GetStateAsync(TKey key, CancellationToken cancellationToken) => GetStateAsync(key, false, cancellationToken);
+
+        /// <summary>
+        /// Gets view state specified by <paramref name="key"/>.
+        /// Initialize view states if it is not initialized.
+        /// Create view state if it is not found.
+        /// </summary>
+        /// <param name="key">View state key.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
         /// <param name="withUpdate">True if view state should be updated, otherwise false.</param>
         /// <returns>View state.</returns>
         public async ValueTask<TViewState> GetStateAsync(TKey key, bool withUpdate = false, CancellationToken cancellationToken = default)
