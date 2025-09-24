@@ -235,7 +235,7 @@ namespace Gizmo.UI.View.Services
             //get required view state
             var state = ServiceProvider.GetRequiredService<T>();
 
-            //if initalization function set invoke it
+            //if initialization function set invoke it
             init?.Invoke(state);
 
             return state;
