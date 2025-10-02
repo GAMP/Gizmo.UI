@@ -1,6 +1,6 @@
 ﻿using System.Reactive.Linq;
 using System.Reactive.Subjects;
-
+using System.Reactive.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace Gizmo.UI.Services
@@ -82,21 +82,30 @@ namespace Gizmo.UI.Services
             // The debounce action
             _subscription = _subject
                 .Buffer(TimeSpan.FromMilliseconds(_debounceBufferTime))
-                .Where(x => x.Count > 0)
-                .Subscribe(items =>
-                {
-                    foreach (var item in items.DistinctBy(x => x.GetHashCode()))
-                    {
-                        _ = Task.Run(() => item.Action(item.CToken))
-                                .ContinueWith(task =>
-                                {
-                                    if (task.IsFaulted)
-                                        _logger.LogError(task.Exception, "DebounceActionAsyncService: Debounce action faulted.");
-                                })
-                                .ConfigureAwait(false);
-                    }
-                });
+                .Distinct(task => task.GetHashCode())
+                .Where(batch => batch.Count > 0)               
+                .SelectMany(batch => ProcessBatchAsync(batch).ToObservable())
+                .Subscribe();
         }
         #endregion
+
+        private async Task ProcessBatchAsync(IList<(Func<CancellationToken,Task> Action, CancellationToken CancellationToken)> batch)
+        {
+            foreach (var task in batch)
+            {
+                try
+                {
+                    await task.Action(task.CancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    // we don't need to log cancellation errors
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "DebounceActionAsyncService: Debounce action faulted.");
+                }
+            }
+        }
     }
 }
