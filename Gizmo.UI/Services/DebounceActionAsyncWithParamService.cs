@@ -80,6 +80,7 @@ namespace Gizmo.UI.Services
         {
             // The debounce action
             _subscription = _subject
+                .Synchronize()
                 .Buffer(TimeSpan.FromMilliseconds(_debounceBufferTime))
                 .Where(x => x.Count > 0)
                 .Subscribe(items =>

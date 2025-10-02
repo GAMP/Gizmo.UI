@@ -81,6 +81,7 @@ namespace Gizmo.UI.Services
         {
             // The debounce action
             _subscription = _subject
+                .Synchronize()
                 .Buffer(TimeSpan.FromMilliseconds(_debounceBufferTime))
                 .Distinct(task => task.GetHashCode())
                 .Where(batch => batch.Count > 0)               

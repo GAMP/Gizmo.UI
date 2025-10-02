@@ -83,11 +83,13 @@ namespace Gizmo.UI.Services
         {
             // The debounce action
             _subscription = _subject
+                .Synchronize() // we can call OnNext concurrently in some cases, this causes crashes
                 .Buffer(TimeSpan.FromMilliseconds(_debounceBufferTime))
-                .Where(x => x.Count > 0)
-                .Subscribe(items =>
+                .Select(batch => batch.Distinct(ActionEqualityComparer.Instance).ToList())
+                .Where(batch => batch.Count > 0)
+                .Subscribe(batch =>
                 {
-                    foreach (var item in items.DistinctBy(x => x.GetHashCode()))
+                    foreach (var item in batch)
                     {
                         try
                         {
@@ -101,5 +103,18 @@ namespace Gizmo.UI.Services
                 });
         }
         #endregion
+
+        sealed class ActionEqualityComparer : IEqualityComparer<Action>
+        {
+            public static readonly ActionEqualityComparer Instance = new();
+
+            public bool Equals(Action? x, Action? y)
+                => ReferenceEquals(x, y) ||
+                   (x is not null && y is not null &&
+                    x.Method == y.Method && Equals(x.Target, y.Target));
+
+            public int GetHashCode(Action obj)
+                => HashCode.Combine(obj.Method, obj.Target);
+        }
     }
 }
