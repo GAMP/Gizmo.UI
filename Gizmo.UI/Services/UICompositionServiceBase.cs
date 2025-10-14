@@ -33,6 +33,7 @@ namespace Gizmo.UI.Services
         protected Type? _rootComponentType = default;
         protected Type? _notificationsComponentType = default;
         protected List<UIPageModuleMetadata> _pageModules = new();
+        protected List<UIUserMenuModuleMetadata> _userMenuModules = new();
         private readonly ILogger _logger;
         private readonly IServiceProvider _serviceProvider;
         private bool _isInitialized = false;
@@ -56,6 +57,12 @@ namespace Gizmo.UI.Services
         public IEnumerable<UIPageModuleMetadata> PageModules
         {
             get { return _pageModules; }
+        }
+        
+        /// <inheritdoc/>
+        public IEnumerable<UIUserMenuModuleMetadata> UserMenuModules
+        {
+            get { return _userMenuModules; }
         }
 
         /// <inheritdoc/>
@@ -187,35 +194,9 @@ namespace Gizmo.UI.Services
                     .ToArray();
 
                 //populate page modules
-                _pageModules = targetAssemblies
-                    .SelectMany(assembly => assembly.GetTypes().Where(type => type.GetCustomAttribute<PageUIModuleAttribute>() != null))
-                    .Select(type => new UIPageModuleMetadata()
-                    {
-                        Title = type.GetCustomAttribute<PageUIModuleAttribute>()?.Title,
-                        TitleLocalizationKey = type.GetCustomAttribute<PageUIModuleAttribute>()?.TitleLocalizationKey,
-                        Description = type.GetCustomAttribute<PageUIModuleAttribute>()?.Description,
-                        DescriptionLocalizationKey = type.GetCustomAttribute<PageUIModuleAttribute>()?.DescriptionLocalizationKey,
-                        DefaultRoute = type.GetCustomAttribute<DefaultRouteAttribute>()?.Template,
-                        DefaultRouteMatch = type.GetCustomAttribute<DefaultRouteAttribute>()?.DefaultRouteMatch ?? NavlinkMatch.All,
-                        Routes = GetRoutes(type),
-                        DisplayOrder = type.GetCustomAttribute<ModuleDisplayOrderAttribute>()?.DisplayOrder ?? 0,
-                        Guid = type.GetCustomAttribute<ModuleGuidAttribute>()?.Guid,
-                        Icon = type.GetCustomAttribute<ModuleIconAttribute>()?.Icon,
-                        Type = type
-                    })
-                    .Where(module=> IsAllowedModule(module))
-                    .OrderBy(metaData => metaData.DisplayOrder)
-                    .ToList();
-
-                foreach (var pageModule in _pageModules)
-                {
-                    Logger.LogInformation("Found page module {ModuleType}", pageModule.Type.Name);
-                    Logger.LogInformation("Default route {DefaultRoute}", pageModule.DefaultRoute);
-                    foreach (var route in pageModule.Routes)
-                    {
-                        Logger.LogInformation("Found route template {Route}", route);
-                    }
-                }
+                
+                InitPageModules(targetAssemblies);
+                InitUserMenuModules(targetAssemblies);
 
                 Initialized?.Invoke(this, EventArgs.Empty);
 
@@ -226,6 +207,81 @@ namespace Gizmo.UI.Services
             {
                 Logger.LogError(ex, "Initialization failed.");
             }
+        }
+
+        private void InitPageModules(Assembly[] targetAssemblies)
+        {
+            _pageModules = FindTypesWithAttribute<PageUIModuleAttribute>(targetAssemblies)
+                .Select(type => new UIPageModuleMetadata
+                {
+                    Title = type.GetCustomAttribute<PageUIModuleAttribute>()?.Title,
+                    TitleLocalizationKey = type.GetCustomAttribute<PageUIModuleAttribute>()?.TitleLocalizationKey,
+                    Description = type.GetCustomAttribute<PageUIModuleAttribute>()?.Description,
+                    DescriptionLocalizationKey = type.GetCustomAttribute<PageUIModuleAttribute>()?.DescriptionLocalizationKey,
+                    DefaultRoute = type.GetCustomAttribute<DefaultRouteAttribute>()?.Template,
+                    DefaultRouteMatch = type.GetCustomAttribute<DefaultRouteAttribute>()?.DefaultRouteMatch ?? NavlinkMatch.All,
+                    Routes = GetRoutes(type),
+                    DisplayOrder = type.GetCustomAttribute<ModuleDisplayOrderAttribute>()?.DisplayOrder ?? 0,
+                    Guid = type.GetCustomAttribute<ModuleGuidAttribute>()?.Guid,
+                    Icon = type.GetCustomAttribute<ModuleIconAttribute>()?.Icon,
+                    Type = type
+                })
+                .Where(IsAllowedModule)
+                .OrderBy(metaData => metaData.DisplayOrder)
+                .ToList();
+
+            foreach (var pageModule in _pageModules)
+            {
+                Logger.LogInformation("Found page module {ModuleType}", pageModule.Type.Name);
+                Logger.LogInformation("Default route {DefaultRoute}", pageModule.DefaultRoute);
+                foreach (var route in pageModule.Routes)
+                {
+                    Logger.LogInformation("Found route template {Route}", route);
+                }
+            }
+        }
+
+        private void InitUserMenuModules(Assembly[] targetAssemblies)
+        {
+            _userMenuModules = FindTypesWithAttribute<UserMenuUIModuleAttribute>(targetAssemblies)
+                .Select(type => new UIUserMenuModuleMetadata
+                {
+                    Title = type.GetCustomAttribute<UserMenuUIModuleAttribute>()?.Title,
+                    TitleLocalizationKey = type.GetCustomAttribute<UserMenuUIModuleAttribute>()?.TitleLocalizationKey,
+                    Description = type.GetCustomAttribute<UserMenuUIModuleAttribute>()?.Description,
+                    DescriptionLocalizationKey = type.GetCustomAttribute<UserMenuUIModuleAttribute>()?.DescriptionLocalizationKey,
+                    DisplayOrder = type.GetCustomAttribute<ModuleDisplayOrderAttribute>()?.DisplayOrder ?? 0,
+                    Guid = type.GetCustomAttribute<ModuleGuidAttribute>()?.Guid,
+                    Icon = type.GetCustomAttribute<ModuleIconAttribute>()?.Icon,
+                    Type = type,
+                    DialogItemType = type.GetCustomAttribute<DialogItemAttribute>()?.DialogItemType
+                })
+                .Where(IsAllowedModule)
+                .OrderBy(metaData => metaData.DisplayOrder)
+                .ToList();
+
+            foreach (var userMenuModule in _userMenuModules)
+            {
+                Logger.LogInformation("Found user menu module {ModuleType}", userMenuModule.Type.Name);
+            }
+        }
+        
+        private static IEnumerable<Type> FindTypesWithAttribute<TAttribute>(Assembly[] targetAssemblies)
+            where TAttribute : Attribute
+        {
+            return targetAssemblies
+                .SelectMany(a =>
+                {
+                    try
+                    {
+                        return a.GetTypes();
+                    }
+                    catch (ReflectionTypeLoadException ex)
+                    {
+                        return ex.Types.Where(t => t != null)!;
+                    }
+                })
+                .Where(t => t.GetCustomAttribute<TAttribute>() != null);
         }
 
         /// <summary>
@@ -252,7 +308,7 @@ namespace Gizmo.UI.Services
         /// <param name="metadata">Module metadata.</param>
         /// <returns>True if allowed, false otherwise</returns>
         /// <remarks>Implemented for later use where we can filter out some of the modules based on their metadata guid or other parameters.</remarks>
-        protected virtual bool IsAllowedModule(UIPageModuleMetadata metadata)
+        protected virtual bool IsAllowedModule<T>(T metadata) where T : UIModuleMetadata
         {
             return true;
         }
