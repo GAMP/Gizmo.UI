@@ -253,8 +253,7 @@ namespace Gizmo.UI.Services
                     DisplayOrder = type.GetCustomAttribute<ModuleDisplayOrderAttribute>()?.DisplayOrder ?? 0,
                     Guid = type.GetCustomAttribute<ModuleGuidAttribute>()?.Guid,
                     Icon = type.GetCustomAttribute<ModuleIconAttribute>()?.Icon,
-                    Type = type,
-                    DialogItemType = type.GetCustomAttribute<DialogItemAttribute>()?.DialogItemType
+                    Type = type
                 })
                 .Where(IsAllowedModule)
                 .OrderBy(metaData => metaData.DisplayOrder)

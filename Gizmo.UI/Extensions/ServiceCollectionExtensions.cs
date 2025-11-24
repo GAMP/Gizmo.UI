@@ -185,13 +185,10 @@ namespace Gizmo.UI
                     throw new ArgumentException($"No dialog services registered in app assembly {appAssemblyName}.");
 
                 //get dialog service type, we could check if multiple types found ?
+                var dialogServiceType = dialogServices[0];
 
-                foreach (var dialogService in dialogServices)
-                {
-                    //create instance of dialog service
-                    ActivatorUtilities.CreateInstance(sp, dialogService);
-                }
-                return services;
+                //create instance of dialog service
+                return ActivatorUtilities.CreateInstance(sp, dialogServiceType);
             });
 
             //add dialog service by interface
