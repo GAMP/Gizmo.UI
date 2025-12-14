@@ -24,6 +24,7 @@ namespace Gizmo.UI.Services
         private NavigationManager? _navigationManager;
         private readonly TaskCompletionSource _associateTask = new();
         private readonly TimeSpan _associateWaitTime = TimeSpan.FromSeconds(10);
+        private string? _lastLocation;
         #endregion
 
         #region EVENTS
@@ -57,7 +58,7 @@ namespace Gizmo.UI.Services
 
             _associateTask.TrySetResult();
 
-            LocationChanged?.Invoke(this, new LocationChangedEventArgs(navigationManager.Uri, false));
+            OnNavigationManagerLocationChanged(this, new LocationChangedEventArgs(navigationManager.Uri, false));
         }
 
         public void NavigateTo(string uri, NavigationOptions options = default)
@@ -150,6 +151,11 @@ namespace Gizmo.UI.Services
 
         private void OnNavigationManagerLocationChanged(object? sender, LocationChangedEventArgs e)
         {
+            if (string.Equals(_lastLocation, e.Location, StringComparison.Ordinal))
+                return;
+
+            _lastLocation = e.Location;
+
             LocationChanged?.Invoke(this, e);
         }
 
