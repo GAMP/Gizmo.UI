@@ -10,7 +10,16 @@ namespace Gizmo.UI.Services
         public event EventHandler<NotificationsChangedArgs>? NotificationsChanged;
         public event EventHandler<NotificationHostSizeRequestArgs>? SizeRequest;
 
+        /// <summary>
+        /// Gets visible notifications.
+        /// </summary>
+        /// <returns></returns>
         IEnumerable<INotificationController> GetVisible();
+
+        /// <summary>
+        /// Gets dismissed notifications.
+        /// </summary>
+        /// <returns></returns>
         IEnumerable<INotificationController> GetDismissed();
 
         /// <summary>
@@ -39,6 +48,13 @@ namespace Gizmo.UI.Services
         /// <param name="notificationId">Notification id.</param>
         /// <returns>True if notification found and timeout reset, otherwise false.</returns>
         bool TryResetTimeout(int notificationId);
+
+        /// <summary>
+        /// Tries to suspend time out for specified notification.
+        /// </summary>
+        /// <param name="notificationId">Notification id.</param>
+        /// <returns>True if notification found and timeout suspended, otherwise false.</returns>
+        bool TrySuspendTimeout(int notificationId);
 
         /// <summary>
         /// Request desired size from notification host.
