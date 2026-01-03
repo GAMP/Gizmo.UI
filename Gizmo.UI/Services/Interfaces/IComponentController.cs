@@ -15,10 +15,10 @@
         /// </summary>
         /// <remarks>
         /// This parameter passed to <see cref="Microsoft.AspNetCore.Components.DynamicComponent.Parameters"/>.<br></br>
-        /// This dictonary will always contain following values <br></br>
+        /// This dictionary will always contain following values <br></br>
         /// <br></br>
         /// 1) DismissCallback (EventCallback)<br></br>
-        /// 2) ResultCallback (EventCallback[T]) where T will be eqault to <see cref="EmptyComponentResult"/> for dialogs without custom result or to any other custom result return type depending on dialog implementation.<br></br>
+        /// 2) ResultCallback (EventCallback[T]) where T will be equal to <see cref="EmptyComponentResult"/> for dialogs without custom result or to any other custom result return type depending on dialog implementation.<br></br>
         /// 3) ErrorCallback (EventCallback[Exception])<br></br>
         /// 4) SuspendTimeoutCallback (EventCallback[Exception])<br></br>
         /// 5) DisplayOptions (<see cref="DialogDisplayOptions"/>)<br></br>
@@ -101,6 +101,7 @@
         /// Used to signal timeout.
         /// </summary>
         public static readonly Exception TimeoutException = new();
+
         /// <summary>
         /// Used to signal dismiss.
         /// </summary>
