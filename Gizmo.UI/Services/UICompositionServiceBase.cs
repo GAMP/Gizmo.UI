@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿#nullable enable
+
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Reflection;
@@ -10,7 +12,6 @@ namespace Gizmo.UI.Services
     /// </summary>
     public abstract class UICompositionServiceBase : IUICompositionService , IDisposable
     {
-        #region CONSTRUCTOR
         public UICompositionServiceBase(IOptionsMonitor<UICompositionOptions> optionsMonitor, ILogger logger, IServiceProvider serviceProvider)
         {
             _optionsMonitor = optionsMonitor;
@@ -19,26 +20,19 @@ namespace Gizmo.UI.Services
             _logger = logger;
             _serviceProvider = serviceProvider;
         }
-        #endregion
 
-        #region EVENTS
         public event EventHandler<EventArgs>? Initialized;
-        #endregion
 
-        #region FIELDS
-        private readonly IDisposable _changeMonitor;
+        private readonly IDisposable? _changeMonitor;
         private readonly IOptionsMonitor<UICompositionOptions> _optionsMonitor;
-        protected HashSet<Assembly> _additionalAssemblies = new();
+        protected HashSet<Assembly> _additionalAssemblies = [];
         protected Assembly? _appAssembly = default;
         protected Type? _rootComponentType = default;
         protected Type? _notificationsComponentType = default;
-        protected List<UIPageModuleMetadata> _pageModules = new();
+        protected List<UIPageModuleMetadata> _pageModules = [];
         private readonly ILogger _logger;
         private readonly IServiceProvider _serviceProvider;
         private bool _isInitialized = false;
-        #endregion
-
-        #region PROPERTIES
 
         /// <inheritdoc/>
         public virtual IEnumerable<Assembly> AdditionalAssemblies
@@ -71,8 +65,6 @@ namespace Gizmo.UI.Services
             private set { _isInitialized = value; }
         }
 
-        #region PROTECTED
-
         /// <summary>
         /// Gets logger instance.
         /// </summary>
@@ -89,19 +81,9 @@ namespace Gizmo.UI.Services
             get { return _serviceProvider; }
         }
 
-        #endregion
-
-        #endregion
-
-        #region EVENT HANDLERS
-
-        protected virtual void OnCompositionSettingsChanged(UICompositionOptions uICompositionSettings, string setting)
+        protected virtual void OnCompositionSettingsChanged(UICompositionOptions uICompositionSettings, string? setting)
         {
         }
-
-        #endregion
-
-        #region FUNCTIONS
 
         /// <inheritdoc/>
         public virtual async Task InitializeAsync(CancellationToken ct)
@@ -257,13 +239,10 @@ namespace Gizmo.UI.Services
             return true;
         }
 
-        #endregion
-
-        #region IDisposable
         public void Dispose()
         {
+            GC.SuppressFinalize(this);
             _changeMonitor?.Dispose();
         } 
-        #endregion
     }
 }
