@@ -28,6 +28,13 @@ namespace Gizmo.UI.Services
         void AcknowledgeAll();
 
         /// <summary>
+        /// Acknowledge specified notification.
+        /// </summary>
+        /// <param name="notificationId">Notification identifier.</param>
+        /// <returns></returns>
+        bool TryAcknowledge(int notificationId);
+
+        /// <summary>
         /// Dismiss all notifications.
         /// </summary>
         void DismissAll();
