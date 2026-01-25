@@ -88,7 +88,7 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         /// <param name="entryId">Line entry id.</param>
         /// <param name="payType">Pay type.</param>
-        public void SetPayType(Guid entryId, OrderLinePayType payType) => NotifyRequest(new SetPayTypeRequest() { EntryId = entryId, PayType = payType });
+        public void SetPayType(Guid entryId, Web.Api.Models.OrderLinePayType payType) => NotifyRequest(new SetPayTypeRequest() { EntryId = entryId, PayType = payType });
 
         /// <summary>
         /// Removes entry from cart.
@@ -464,7 +464,7 @@ namespace Gizmo.UI.View.Services
             /// <summary>
             /// Pay type.
             /// </summary>
-            public required OrderLinePayType PayType { get; init; }
+            public required Web.Api.Models.OrderLinePayType PayType { get; init; }
         }
 
         protected sealed class AddDepositRequest : ICartRequest
