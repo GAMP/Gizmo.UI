@@ -120,7 +120,7 @@ namespace Gizmo.UI.Services
             var dialogController = _dialogLookup.GetOrAdd(dialogIdentifier, (id) =>
             {
                 var controller = new DialogController<TComponent, TResult>(dialogIdentifier, displayOptions, parameters);
-                controller.CreateCallbacks(resultCallback, errorCallback, suspendTimeoutCallback, parameters);
+                controller.CreateCallbacks(resultCallback, errorCallback, suspendTimeoutCallback, dialogIdentifier, parameters);
                 return controller;
             });             
 

@@ -149,6 +149,7 @@ namespace Gizmo.UI.Services
         public void CreateCallbacks(Action<TResult> result,
             Action<Exception> error,
             Action<bool> suspendTimeout,
+            int identifier,
             IDictionary<string, object> parameters)
         {
             _error = error;
@@ -170,6 +171,8 @@ namespace Gizmo.UI.Services
             //create and add suspend timeout event callback
             SuspendTimeoutCallback = EventCallback.Factory.Create(this, suspendTimeout);
             parameters.TryAdd("SuspendTimeoutCallback", SuspendTimeoutCallback);
+
+            parameters.TryAdd("Identifier", identifier);
         }
     }
 }

@@ -122,7 +122,7 @@ namespace Gizmo.UI.Services
             var state = _notificationStates.GetOrAdd(notificationIdentifier, (id) =>
             {
                 var controller = new NotificationController<TComponent, TResult>(notificationIdentifier, displayOptions, parameters);
-                controller.CreateCallbacks(resultCallback, errorCallback, suspendTimeoutCallback, parameters);
+                controller.CreateCallbacks(resultCallback, errorCallback, suspendTimeoutCallback, notificationIdentifier, parameters);
 
                 var state = new NState(notificationIdentifier, controller, addOptions)
                 {
