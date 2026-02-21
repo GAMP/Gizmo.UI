@@ -1,11 +1,33 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
+		<LangVersion>latest</LangVersion>
+		<Version>1.0.0.0</Version>
+		<PackageProjectUrl>https://www.gizmopowered.net/</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/GAMP/Gizmo.UI</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<Authors>NETProjects LP</Authors>
+		<Company>NETProjects LP</Company>
+		<Product>Gizmo</Product>
+		<Copyright>NETProjects LP</Copyright>
+		<Description>Gizmo UI abstractions library. Contains shared UI services, view state management, and component infrastructure for Gizmo applications.</Description>
+		<Title>Gizmo UI abstractions library.</Title>
+		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageIcon>package_icon.png</PackageIcon>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="Resources\package_icon.png">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="10.0.2" />
@@ -14,7 +36,14 @@
 		<PackageReference Include="Microsoft.Extensions.Localization.Abstractions" Version="10.0.2" />
 		<PackageReference Include="Microsoft.JSInterop" Version="10.0.2" />
 		<PackageReference Include="System.Reactive" Version="6.1.0" />
+	</ItemGroup>
+
+	<ItemGroup Condition="Exists('..\..\Gizmo.Shared\Gizmo.Shared.csproj')">
 		<ProjectReference Include="..\..\Gizmo.Shared\Gizmo.Shared.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="!Exists('..\..\Gizmo.Shared\Gizmo.Shared.csproj')">
+		<PackageReference Include="Gizmo.Shared" Version="1.0.8" />
 	</ItemGroup>
 
 </Project>
