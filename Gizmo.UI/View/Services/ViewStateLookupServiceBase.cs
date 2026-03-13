@@ -90,10 +90,10 @@ namespace Gizmo.UI.View.Services
             if (!withUpdate && hasValue)
                 return viewState!;
 
+            await _cacheAccessLock.WaitAsync(cancellationToken);
+
             try
             {
-                await _cacheAccessLock.WaitAsync(cancellationToken);
-
                 if (withUpdate && hasValue)
                 {
                     var updatedViewState = await UpdateViewStateAsync(key, viewState!, cancellationToken);
@@ -115,6 +115,10 @@ namespace Gizmo.UI.View.Services
                 _debounceService.Debounce(viewState.RaiseChanged);
 
                 return viewState;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
