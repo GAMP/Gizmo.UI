@@ -6,7 +6,7 @@ using System.Reflection;
 namespace Gizmo.UI
 {
     /// <summary>
-    /// Valiadation info generator class.
+    /// Validation info generator class.
     /// </summary>
     public static class ValidationInfo
     {
@@ -23,7 +23,7 @@ namespace Gizmo.UI
         /// <summary>
         /// Predicate to filter out validating properties.
         /// </summary>
-        private static readonly Predicate<PropertyInfo> _validatingPropertiesPredictate = (p) =>
+        private static readonly Predicate<PropertyInfo> _validatingPropertiesPredicate = (p) =>
         {
             //must not contain property change ignore attribute
             return p.GetCustomAttribute<PropertyChangeIgnoreAttribute>() == null &&
@@ -34,7 +34,7 @@ namespace Gizmo.UI
         /// <summary>
         /// Predicate to filter out non-class properties.
         /// </summary>
-        private static readonly Predicate<PropertyInfo> _nonClassPropertiesPredictate = (p) =>
+        private static readonly Predicate<PropertyInfo> _nonClassPropertiesPredicate = (p) =>
         {
             //must be a primitve type https://docs.microsoft.com/en-us/dotnet/api/system.type.isprimitive?view=net-6.0 or string
             //other types might need to be added
@@ -44,7 +44,7 @@ namespace Gizmo.UI
         /// <summary>
         /// Predicate to filter out class properties.
         /// </summary>
-        private static readonly Predicate<PropertyInfo> _classPropertiesPredictate = (p) =>
+        private static readonly Predicate<PropertyInfo> _classPropertiesPredicate = (p) =>
         {
             //must not be primitive type https://docs.microsoft.com/en-us/dotnet/api/system.type.isprimitive?view=net-6.0 and not string
             //some other types might need to be added
@@ -58,7 +58,7 @@ namespace Gizmo.UI
         /// <summary>
         /// Gets validation information for specified view state object.
         /// </summary>
-        /// <param name="viewState">View state instane.</param>
+        /// <param name="viewState">View state instance.</param>
         /// <returns>List of validation info.</returns>
         public static IEnumerable<InstanceValidationInfo> Get(IValidatingViewState viewState)
         {
@@ -82,16 +82,16 @@ namespace Gizmo.UI
         /// <returns>List of property info.</returns>
         private static IEnumerable<PropertyInfo> GetProperties(Type type)
         {
-            //since we requesting propeties per type we can use cache to speed up the process
+            //since we requesting properties per type we can use cache to speed up the process
             return _propertyCache.GetOrAdd(type, k =>
             {
                 //get all properties that are annotated with ValidatingProperty attribute.
-                return k.GetProperties().Where(property => _validatingPropertiesPredictate(property));
+                return k.GetProperties().Where(property => _validatingPropertiesPredicate(property));
             });
         }
 
         /// <summary>
-        /// Recursevly gets validation info on specified object.
+        /// Recursively gets validation info on specified object.
         /// </summary>
         /// <param name="instance">Object instance.</param>
         /// <param name="type">Object type.</param>
@@ -102,13 +102,13 @@ namespace Gizmo.UI
             var properties = GetProperties(type);
 
             //get all properties that are not class
-            var nonClassProperties = properties.Where(p => _nonClassPropertiesPredictate(p));
+            var nonClassProperties = properties.Where(p => _nonClassPropertiesPredicate(p));
 
             //create new info
             validationInfos.Add(new InstanceValidationInfo(instance, type, nonClassProperties));
 
             //get all properties that represent a class
-            var classProperties = properties.Where(p => _classPropertiesPredictate(p));
+            var classProperties = properties.Where(p => _classPropertiesPredicate(p));
 
             //recurse all properties
             foreach (var property in classProperties)
