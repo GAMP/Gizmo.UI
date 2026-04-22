@@ -368,5 +368,15 @@ namespace Gizmo.UI.View.Services
         protected abstract TViewState CreateDefaultViewState(TKey key);
 
         #endregion
+
+        /// <summary>
+        /// Helper to throw exception in case we cant map data to view state.
+        /// </summary>
+        /// <returns>Never returns anything, only required for syntax.</returns>
+        /// <exception cref="Exception"></exception>
+        public static T ThrowCantMapException<T>() where T :IViewState => throw new Exception($"Cant map data to view state of type {typeof(T)}.");
+
+        /// <inheritdoc cref="ThrowCantMapException{T}()"/>
+        protected TViewState ThrowCantMapException() => ThrowCantMapException<TViewState>();
     }
 }
