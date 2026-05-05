@@ -52,7 +52,7 @@ namespace Gizmo.UI.View.Services
         /// </summary>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>View states.</returns>
-        public async ValueTask<IEnumerable<TViewState>> GetStatesAsync(CancellationToken cancellationToken = default)
+        public virtual async ValueTask<IEnumerable<TViewState>> GetStatesAsync(CancellationToken cancellationToken = default)
         {
             //this will trigger data initialization if required
             await EnsureDataInitialized(cancellationToken);
