@@ -585,7 +585,7 @@ namespace Gizmo.UI.View.Services
                             //check if validation task have completed successfully
                             if (t.IsCompletedSuccessfully)
                             {
-                                //add the results in case no cancellation occured
+                                //add the results in case no cancellation occurred
                                 if (!cts.IsCancellationRequested)
                                 {
                                     foreach (var error in t.Result)
