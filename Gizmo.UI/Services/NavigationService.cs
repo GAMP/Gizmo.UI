@@ -58,6 +58,11 @@ namespace Gizmo.UI.Services
 
             _associateTask.TrySetResult();
 
+            //a new manager association means a new document (initial attach or web view recreation after a crash),
+            //the last location belongs to the previous document so it must not suppress the event below,
+            //view services rely on it to reconcile current state with the fresh document location
+            _lastLocation = null;
+
             OnNavigationManagerLocationChanged(this, new LocationChangedEventArgs(navigationManager.Uri, false));
         }
 
