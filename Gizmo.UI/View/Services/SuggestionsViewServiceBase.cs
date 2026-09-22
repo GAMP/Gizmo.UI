@@ -28,6 +28,15 @@ namespace Gizmo.UI.View.Services
         
         private string? _previousPattern;
 
+        /// <summary>
+        /// Quiet period after the last pattern change before suggestions are generated.
+        /// </summary>
+        /// <remarks>
+        /// Overridable so a host can match the debounce of its other search inputs. The default is left at one second
+        /// so existing consumers keep their current behaviour.
+        /// </remarks>
+        protected virtual TimeSpan SuggestionThrottle => TimeSpan.FromSeconds(1);
+
         public Task SetSuggestionPatternAsync(string pattern)
         {
             if (pattern == _previousPattern)
@@ -44,7 +53,7 @@ namespace Gizmo.UI.View.Services
 
             _patternSubject ??= new Subject<string>();
             _patternSubscription ??= _patternSubject
-                .Throttle(TimeSpan.FromSeconds(1))
+                .Throttle(SuggestionThrottle)
                 .Subscribe(PatternChangeSubscriber);
 
             _patternSubject.OnNext(pattern);
