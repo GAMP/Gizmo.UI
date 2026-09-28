@@ -83,8 +83,8 @@ namespace Gizmo.UI.Services
             _subscription = _subject
                 .Synchronize()
                 .Buffer(TimeSpan.FromMilliseconds(_debounceBufferTime))
-                .Distinct(task => task.GetHashCode())
-                .Where(batch => batch.Count > 0)               
+                .Select(batch => batch.Distinct().ToList())
+                .Where(batch => batch.Count > 0)
                 .SelectMany(batch => ProcessBatchAsync(batch).ToObservable())
                 .Subscribe();
         }
