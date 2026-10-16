@@ -5,7 +5,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<LangVersion>latest</LangVersion>
-		<Version>1.0.2.0</Version>
+		<Version>1.0</Version>
 		<PackageProjectUrl>https://www.gizmopowered.net/</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/GAMP/Gizmo.UI</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
@@ -38,12 +38,8 @@
 		<PackageReference Include="System.Reactive" Version="6.1.0" />
 	</ItemGroup>
 
-	<ItemGroup Condition="Exists('..\..\Gizmo.Shared\Gizmo.Shared.csproj')">
-		<ProjectReference Include="..\..\Gizmo.Shared\Gizmo.Shared.csproj" />
-	</ItemGroup>
-
-	<ItemGroup Condition="!Exists('..\..\Gizmo.Shared\Gizmo.Shared.csproj')">
-		<PackageReference Include="Gizmo.Shared" Version="1.0.14" />
+	<ItemGroup>
+		<PackageReference Include="Gizmo.Shared" Version="1.0.16" />
 	</ItemGroup>
 
 </Project>

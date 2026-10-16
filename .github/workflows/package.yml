@@ -1,0 +1,83 @@
+# Canonical single caller-owned NuGet package workflow; copy it to a consumer repository at .github/workflows/package.yml.
+# Replace every `<40-character-infra-commit-sha>` with one immutable Gizmo.Infra commit SHA and both branch placeholders with real branch names.
+# Do not rename the file: its name binds NuGet.org Trusted Publishing.
+name: Package
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+# The caller owns the only lock; the reusable workflow declares none so it cannot nest.
+concurrency:
+  group: nuget-${{ github.repository }}
+  cancel-in-progress: false
+
+# Each physical branch name is declared exactly once here and passed to Gizmo.Infra by alias.
+env:
+  DEV: &dev pre-release
+  PROD: &prod release
+
+jobs:
+  plan:
+    uses: GAMP/Gizmo.Infra/.github/workflows/package.yml@ee6fbd96adbcfba997755376a2c227f536c210d7
+    permissions:
+      contents: read
+    with:
+      dev: *dev
+      prod: *prod
+
+  # The public NuGet.org publisher is caller-owned so it can present caller OIDC.
+  nuget:
+    needs: plan
+    if: ${{ needs.plan.outputs.publisher == 'nuget' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Publish public package
+        uses: GAMP/Gizmo.Infra/.github/actions/nuget@ee6fbd96adbcfba997755376a2c227f536c210d7
+        with:
+          state: ${{ needs.plan.outputs.state }}
+          user: ${{ vars.NUGET_USER }}
+
+  # The internal registry publisher is caller-owned so it can use the caller token.
+  internal:
+    needs: plan
+    if: ${{ needs.plan.outputs.publisher == 'internal' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Publish internal package
+        uses: GAMP/Gizmo.Infra/.github/actions/internal@ee6fbd96adbcfba997755376a2c227f536c210d7
+        with:
+          state: ${{ needs.plan.outputs.state }}
+
+  # Production tagging only, and only after the selected publisher succeeded.
+  tag:
+    needs:
+      - plan
+      - nuget
+      - internal
+    if: >-
+      ${{
+        always() &&
+        needs.plan.outputs.tag == 'true' &&
+        (
+          needs.nuget.result == 'success' ||
+          needs.internal.result == 'success'
+        )
+      }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Reconcile immutable production tag
+        uses: GAMP/Gizmo.Infra/.github/actions/tag@ee6fbd96adbcfba997755376a2c227f536c210d7
+        with:
+          state: ${{ needs.plan.outputs.state }}
